@@ -4,6 +4,7 @@
 // simulates the real battle code headlessly with a seeded RNG, and fits TUNE[wave] (enemy HP/ATK
 // multipliers in index.html) so that the army wins with ~TARGET of its total HP left.
 //
+// Packing order is front-to-back: golem, orc, skeleton, slime, goblin, mage (the top rows are the front line).
 // Median assumptions (not best-case synergies):
 //   - the army spends 88% of the gold it has earned, split by fixed gold shares across piece types;
 //   - side effects are applied at median strength instead of from a specific layout:
@@ -11,6 +12,8 @@
 //       aura + cells = HP x1.087 / ATK x1.09 on every unit, ramped in linearly until wave 8
 //                      (early armies have no mage/golem/aura/banner coverage yet),
 //       affinity     = only slime(fire) / goblin(water) / mage(poison) groups, from wave 3 on;
+// Early-game cushion (default, disable with --noramp): waves 1-3 aim for 35% / 25% / 15% HP left instead of 10%,
+// and wave 1 is additionally backed off until every bag's bare starting pieces (no purchase) can win it.
 // The fit target is the mean HP left in won fights, with at least --minwin (default 90%) of seeds winning.
 // The reported margin (+ally HP share left when winning, - enemy HP share left when losing) is continuous across the cliff.
 //   - the bag grows to 30 cells after boss 1 and 36 after boss 2.
@@ -24,7 +27,7 @@ import {fileURLToPath} from 'node:url';
 
 const {chromium}=createRequire(import.meta.url)('playwright');
 const arg=(k,d)=>{const i=process.argv.indexOf('--'+k);return i<0?d:(process.argv[i+1]&&!process.argv[i+1].startsWith('--')?+process.argv[i+1]:true);};
-const TARGET=arg('target',.10),SEEDS=arg('seeds',10),VERIFY=arg('verify',24),WRITE=process.argv.includes('--write'),MINWIN=arg('minwin',.9),WORKERS=4,BASE=process.argv.includes('--baseline');
+const TARGET=arg('target',.10),SEEDS=arg('seeds',10),VERIFY=arg('verify',24),WRITE=process.argv.includes('--write'),MINWIN=arg('minwin',.9),RAMP=process.argv.includes('--noramp')?{}:{1:.35,2:.25,3:.15},WORKERS=4,BASE=process.argv.includes('--baseline');
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),file=path.join(root,'index.html');
 
 const PAGE=`(() => {
@@ -39,11 +42,13 @@ const PAGE=`(() => {
     for(const t of ['skeleton','slime'])while(gold-spend>=COST[t]&&cellsOf(n)+CELLS[t]<=cap(w)){n[t]++;spend+=COST[t];}
     return n;}
   function setup(w){newRun('lord');closeModal();state.pieces=[];state.bench=state.bench.map(()=>null);for(let i=0;i<(w>8?2:w>4?1:0);i++)expand();rebuild();
-    const n=army(w),order=['golem','orc','mage','goblin','skeleton','slime'],aff=w>=3?{slime:'fire',goblin:'water',mage:'poison'}:{};
+    const n=army(w),order=['golem','orc','skeleton','slime','goblin','mage'],aff=w>=3?{slime:'fire',goblin:'water',mage:'poison'}:{};
     for(const t of order)for(let i=0;i<(n[t]||0);i++){const p=piece(t);if(aff[t])p.aff=aff[t];if(!place(p))break;}
     state.wave=w;return n;}
   function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
-  window.BAL={army,setup,
+  // Wave 1 with a bag's own starting pieces and no purchase, real rules, no median patches.
+  function startRun(bag,seed,m){const real=Math.random;Math.random=rng(seed*104729);window.__TEST__=true;TUNE[0]={hp:m,atk:Math.sqrt(m)};newRun(bag);closeModal();state.wave=1;battle=buildBattle();mode='battle';battle.intro=null;let t=0;while(!battle.end&&t<61){simulate(.025);t+=.025;}const won=battle.won;Math.random=real;window.__TEST__=false;mode='prepare';battle=null;return won;}
+  window.BAL={army,setup,startRun,startWins(m,seeds){const o={};for(const b of ['lord','alchemist','smith']){let n=0;for(let s=1;s<=seeds;s++)if(startRun(b,s,m))n++;o[b]=n/seeds;}return o;},
     run(w,seed,m){const real=Math.random;Math.random=rng(seed*7919+w);window.__TEST__=true;
       const oP=powerOf,f=Math.min(1,w/8);powerOf=()=>({hp:1+.087*f,atk:1+.09*f,rate:1,tags:[]});
       TUNE[w-1]={hp:m,atk:Math.sqrt(m)};setup(w);battle=buildBattle();mode='battle';battle.intro=null;
@@ -57,8 +62,10 @@ const PAGE=`(() => {
     mean(w,seeds,m){let r=0,wins=0,mg=0;for(let s=1;s<=seeds;s++){const o=this.run(w,s,m);r+=o.rem;mg+=o.margin;wins+=o.won?1:0;}return {rem:r/seeds,remWon:wins?r/wins:0,margin:mg/seeds,wins:wins/seeds};},
     // Bisect on the mean HP left among won fights (the "typical win"), then back off until >=MINWIN of seeds win,
     // because small armies sit on a win/loss cliff where the mean margin alone hides coin-flip fights.
-    fit(w,seeds,target,minWin){let lo=Math.log(.05),hi=Math.log(30);for(let i=0;i<9;i++){const mid=(lo+hi)/2;if(this.mean(w,seeds,Math.exp(mid)).remWon>target)lo=mid;else hi=mid;}
-      let m=Math.exp((lo+hi)/2);for(let k=0;k<25&&this.mean(w,seeds,m).wins<minWin;k++)m*=.97;return m;}
+    fit(w,seeds,target,minWin,guard){let lo=Math.log(.05),hi=Math.log(30);for(let i=0;i<9;i++){const mid=(lo+hi)/2;if(this.mean(w,seeds,Math.exp(mid)).remWon>target)lo=mid;else hi=mid;}
+      let m=Math.exp((lo+hi)/2);for(let k=0;k<25&&this.mean(w,seeds,m).wins<minWin;k++)m*=.97;
+      // wave 1 guard: even the unmodified starting army (no purchase) must be able to win
+      if(guard)for(let k=0;k<60&&Math.min(...Object.values(this.startWins(m,seeds)))<minWin;k++)m*=.97;return m;}
   };
 })()`;
 
@@ -67,10 +74,10 @@ async function worker(browser,waves){
   await p.evaluate(PAGE);const out={};
   for(const w of waves){
     if(BASE){out[w]={m:1,...await p.evaluate(([w,s])=>BAL.mean(w,s,1),[w,VERIFY]),army:await p.evaluate(w=>BAL.army(w),w)};continue;}
-    const m=await p.evaluate(([w,s,t,mw])=>BAL.fit(w,s,t,mw),[w,SEEDS,TARGET,MINWIN]);
-    const ver=await p.evaluate(([w,s,m])=>{let r=0,wins=0,min=9,max=0,mg=0;for(let k=101;k<101+s;k++){const o=BAL.run(w,k,m);mg+=o.margin;if(o.won){wins++;r+=o.rem;min=Math.min(min,o.rem);max=Math.max(max,o.rem);}}return {rem:wins?r/wins:0,margin:mg/s,wins:wins/s,min,max};},[w,VERIFY,m]);
-    out[w]={m,...ver,army:await p.evaluate(w=>BAL.army(w),w)};
-    console.error('wave',w,'m=',m.toFixed(3),'HP left when won',(ver.rem*100).toFixed(1)+'%','margin',(ver.margin*100).toFixed(1)+'%','win',(ver.wins*100|0)+'%');
+    const tgt=RAMP[w]??TARGET;const m=await p.evaluate(([w,s,t,mw,g])=>BAL.fit(w,s,t,mw,g),[w,SEEDS,tgt,MINWIN,w===1&&Object.keys(RAMP).length>0]);
+    const ver=await p.evaluate(([w,s,m])=>{let r=0,wins=0,min=9,max=0,mg=0;for(let k=101;k<101+s;k++){const o=BAL.run(w,k,m);mg+=o.margin;if(o.won){wins++;r+=o.rem;min=Math.min(min,o.rem);max=Math.max(max,o.rem);}}let sw;if(w===1)sw=BAL.startWins(m,Math.min(s,12));return {rem:wins?r/wins:0,margin:mg/s,wins:wins/s,min,max,startWins:sw};},[w,VERIFY,m]);
+    out[w]={m,tgt,...ver,army:await p.evaluate(w=>BAL.army(w),w)};
+    console.error('wave',w,'target',(tgt*100)+'%','m=',m.toFixed(3),'HP left when won',(ver.rem*100).toFixed(1)+'%','margin',(ver.margin*100).toFixed(1)+'%','win',(ver.wins*100|0)+'%');
   }
   await p.close();return out;
 }
@@ -80,7 +87,7 @@ if(process.argv.includes('--scan')){const w=arg('scan',1);const b=await chromium
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM||'/opt/pw-browsers/chromium'});
 const waves=[...Array(12)].map((_,i)=>i+1),groups=Array.from({length:WORKERS},(_,i)=>waves.filter((_,j)=>j%WORKERS===i));
 const res=Object.assign({},...await Promise.all(groups.map(g=>worker(browser,g))));await browser.close();
-console.log('wave | tune hp/atk | win%  | HP left when won (mean, min-max) | margin | army');
-for(const w of waves){const r=res[w];console.log(String(w).padStart(4),'|',r.m.toFixed(3),'/',Math.sqrt(r.m).toFixed(3),'|',String((r.wins*100)|0).padStart(4)+'%','|',(r.rem*100).toFixed(1)+'%',r.min!==undefined&&r.min<9?`(${(r.min*100).toFixed(0)}-${(r.max*100).toFixed(0)}%)`:'','|',(r.margin*100).toFixed(1)+'%','|',JSON.stringify(r.army));}
+console.log('wave | target | tune hp/atk | enemy HP x | win%  | HP left when won (mean, min-max) | start-only win% | army');
+for(const w of waves){const r=res[w];console.log(String(w).padStart(4),'|',r.tgt!==undefined?(r.tgt*100).toFixed(0)+'%':'-','|',r.m.toFixed(3),'/',Math.sqrt(r.m).toFixed(3),'|',(Math.pow(1.115,w-1)*r.m).toFixed(2),'|',String((r.wins*100)|0).padStart(4)+'%','|',(r.rem*100).toFixed(1)+'%',r.min!==undefined&&r.min<9?`(${(r.min*100).toFixed(0)}-${(r.max*100).toFixed(0)}%)`:'','|',r.startWins!==undefined?Object.entries(r.startWins).map(([b,v])=>b+' '+((v*100)|0)+'%').join(' '):'-','|',JSON.stringify(r.army));}
 if(WRITE&&!BASE){let s=fs.readFileSync(file,'utf8');const lit='const TUNE=['+waves.map(w=>`{hp:${res[w].m.toFixed(3)},atk:${Math.sqrt(res[w].m).toFixed(3)}}`).join(',')+'];';
   const re=/const TUNE=(Array\.from\(\{length:12\},\(\)=>\(\{hp:1,atk:1\}\)\)|\[[^\]]*\]);/;if(!re.test(s))throw new Error('TUNE not found');fs.writeFileSync(file,s.replace(re,lit));console.error('wrote TUNE to index.html');}
