@@ -2,7 +2,7 @@
 //
 // For each wave it builds a "median" player army from the gold the economy has paid out so far,
 // simulates the real battle code headlessly with a seeded RNG, and fits TUNE[wave] (enemy HP/ATK
-// multipliers in index.html) so that the army wins with ~TARGET of its total HP left.
+// multipliers in data/game-data.json) so that the army wins with ~TARGET of its total HP left.
 //
 // Packing order is front-to-back: golem, orc, skeleton, slime, goblin, mage (the top rows are the front line).
 // Median assumptions (not best-case synergies):
@@ -24,6 +24,7 @@ import {createRequire} from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {readData,writeData} from './data-io.mjs';
 
 const {chromium}=createRequire(import.meta.url)('playwright');
 const arg=(k,d)=>{const i=process.argv.indexOf('--'+k);return i<0?d:(process.argv[i+1]&&!process.argv[i+1].startsWith('--')?+process.argv[i+1]:true);};
@@ -52,5 +53,4 @@ const waves=[...Array(12)].map((_,i)=>i+1),groups=Array.from({length:WORKERS},(_
 const res=Object.assign({},...await Promise.all(groups.map(g=>worker(browser,g))));await browser.close();
 console.log('wave | target | tune hp/atk | enemy HP x | win%  | HP left when won (mean, min-max) | start-only win% | army');
 for(const w of waves){const r=res[w];console.log(String(w).padStart(4),'|',r.tgt!==undefined?(r.tgt*100).toFixed(0)+'%':'-','|',r.m.toFixed(3),'/',Math.sqrt(r.m).toFixed(3),'|',(Math.pow(1.115,w-1)*r.m).toFixed(2),'|',String((r.wins*100)|0).padStart(4)+'%','|',(r.rem*100).toFixed(1)+'%',r.min!==undefined&&r.min<9?`(${(r.min*100).toFixed(0)}-${(r.max*100).toFixed(0)}%)`:'','|',r.startWins!==undefined?Object.entries(r.startWins).map(([b,v])=>b+' '+((v*100)|0)+'%').join(' '):'-','|',JSON.stringify(r.army));}
-if(WRITE&&!BASE){let s=fs.readFileSync(file,'utf8');const lit='const TUNE=['+waves.map(w=>`{hp:${res[w].m.toFixed(3)},atk:${Math.sqrt(res[w].m).toFixed(3)}}`).join(',')+'];';
-  const re=/const TUNE=(Array\.from\(\{length:12\},\(\)=>\(\{hp:1,atk:1\}\)\)|\[[^\]]*\]);/;if(!re.test(s))throw new Error('TUNE not found');fs.writeFileSync(file,s.replace(re,lit));console.error('wrote TUNE to index.html');}
+if(WRITE&&!BASE){const data=readData();data.tune=waves.map(w=>({hp:+res[w].m.toFixed(3),atk:+Math.sqrt(res[w].m).toFixed(3)}));writeData(data);console.error('wrote tune to data/game-data.json and data/game-data.js');}

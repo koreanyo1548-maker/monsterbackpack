@@ -1,0 +1,117 @@
+{
+ "_doc": "Game tables shared by the web build, tools/balance.mjs and any future port. Edit here, then run: node tools/build-data.mjs (regenerates data/game-data.js).",
+ "units": {
+  "slime": {"name":"슬라임","asset":"slime","cost":3,"hp":100,"atk":10,"rate":1,"range":22,"speed":38,"count":2,"role":"물량 · 근접"},
+  "goblin": {"name":"고블린 궁수","asset":"goblin","cost":4,"hp":70,"atk":15,"rate":0.8,"range":145,"speed":35,"count":1,"role":"후방 · 원거리"},
+  "golem": {"name":"골렘","asset":"golem","cost":6,"hp":400,"atk":25,"rate":0.5,"range":27,"speed":25,"count":1,"role":"전열 · 탱커"},
+  "mage": {"name":"마법사","asset":"mage","cost":5,"hp":80,"atk":35,"rate":0.4,"range":132,"speed":32,"count":1,"role":"후방 · 광역"},
+  "fire": {"name":"불꽃 정수","asset":"fire","cost":4,"material":true},
+  "water": {"name":"물의 정수","asset":"water","cost":4,"material":true},
+  "poison": {"name":"독버섯","asset":"poison","cost":4,"material":true},
+  "skeleton": {"name":"스켈레톤","asset":"skeleton","cost":4,"hp":70,"atk":18,"rate":1,"range":22,"speed":38,"count":1,"role":"전열 · 근접 딜러"},
+  "orc": {"name":"오크 전사","asset":"orc","cost":7,"hp":260,"atk":22,"rate":0.6,"range":24,"speed":30,"count":1,"role":"전열 · 광역 근접"},
+  "life": {"name":"생명 정수","asset":"water","cost":4,"material":true},
+  "steamEss": {"name":"증기 정수","asset":"water","cost":8,"material":true,"gives":"steam","fx":"hue-rotate(-20deg) saturate(.6) brightness(1.35)"},
+  "plagueEss": {"name":"역병 정수","asset":"poison","cost":8,"material":true,"gives":"plague","fx":"hue-rotate(225deg) saturate(1.15)"},
+  "blastEss": {"name":"폭염 정수","asset":"fire","cost":8,"material":true,"gives":"blast","fx":"hue-rotate(20deg) saturate(1.5)"},
+  "springEss": {"name":"샘물 정수","asset":"water","cost":8,"material":true,"gives":"spring","fx":"hue-rotate(-50deg) saturate(1.5)"},
+  "curse": {"name":"저주 조각","asset":"poison","cost":0,"material":true,"curse":true}
+ },
+ "affinities": {
+  "none": {"name":"","color":"#a2b76c","effect":"같은 몬스터를 연결해 무리를 만드세요","filter":""},
+  "fire": {"name":"화염 ","color":"#eb9051","effect":"공격 시 화상 · 3초 동안 초당 공격력의 20%","filter":"sepia(.35) saturate(1.7) hue-rotate(325deg)"},
+  "water": {"name":"물 ","color":"#79bdd5","effect":"공격 시 2초 동안 적 공격속도 25% 감소","filter":"hue-rotate(115deg) saturate(1.3)"},
+  "poison": {"name":"독 ","color":"#c28bcc","effect":"공격 시 독 · 4초 동안 초당 공격력의 10%, 3중첩","filter":"hue-rotate(215deg) saturate(1.1)"},
+  "life": {"name":"생명 ","color":"#b3ce6f","effect":"3초마다 최대 체력의 3% 회복","filter":"hue-rotate(25deg) saturate(1.4)"},
+  "steam": {"name":"빙염 ","color":"#83ccdc","effect":"화상과 공격속도 감소를 함께 적용","filter":"hue-rotate(155deg) saturate(1.1)"},
+  "plague": {"name":"맹독 생명 ","color":"#c29bdc","effect":"독 중첩과 주기적 회복을 함께 적용","filter":"hue-rotate(225deg) saturate(1.15)"},
+  "blast": {"name":"폭염 ","color":"#e8825a","effect":"공격 시 화상과 독을 함께 적용","filter":"hue-rotate(20deg) saturate(1.5)"},
+  "spring": {"name":"샘물 ","color":"#7fd0b0","effect":"공격속도 감소와 주기적 회복을 함께 적용","filter":"hue-rotate(75deg) saturate(1.4)"}
+ },
+ "recipes": {"fire":{"water":"steam","poison":"blast"},"water":{"fire":"steam","life":"spring"},"poison":{"life":"plague","fire":"blast"},"life":{"poison":"plague","water":"spring"}},
+ "fusions": {"fire+water":"steamEss","life+poison":"plagueEss","fire+poison":"blastEss","life+water":"springEss"},
+ "elements": {"blast":["fire","poison"],"spring":["water"],"fire":["fire"],"steam":["fire","water"],"water":["water"],"poison":["poison"],"plague":["poison"],"life":[],"none":[]},
+ "shapes": {"orc":[[0,0],[1,0]],"curse":[[0,0],[1,0]],"goblin":[[0,0],[0,1]],"golem":[[0,0],[1,0],[0,1],[1,1]],"mage":[[0,0],[1,0],[0,1]]},
+ "auras": {
+  "orc": [{"d":[-1,0],"stat":"atk","v":0.12}],
+  "mage": [{"d":[1,0],"stat":"atk","v":0.2}],
+  "golem": [{"d":[0,-1],"stat":"hp","v":0.15},{"d":[0,1],"stat":"hp","v":0.15}],
+  "goblin": [{"d":[0,1],"stat":"rate","v":0.15}]
+ },
+ "bagKinds": {"banner":{"g":"⚑","name":"군기 칸","desc":"올라간 몬스터 공격력 +15%"},"shield":{"g":"⛨","name":"방패 칸","desc":"올라간 몬스터 체력 +20%"},"still":{"g":"⚗","name":"증류 칸","desc":"올라간 무리의 복합 변이 성공률 +25%"}},
+ "bags": {
+  "lord": {
+   "name": "군주의 주머니",
+   "desc": "5×5 정사각형 · 중앙 군기 칸 · 슬라임 군단",
+   "open": [".....#",".....#",".....#",".....#",".....#","######"],
+   "kinds": ["......","......","..bb..","..bb..","......","......"],
+   "steps": [[[0,5],[1,5],[2,5],[3,5],[4,5]],[[5,0],[5,1],[5,2],[5,3],[5,4],[5,5]]],
+   "start": [["slime",0,2],["slime",1,2],["goblin",2,3]],
+   "shop": ["slime","fire","golem"],
+   "bench": ["any","any","any"]
+  },
+  "alchemist": {
+   "name": "연금술사의 배낭",
+   "desc": "모서리가 잘린 24칸 · 증류 칸 4곳 · 재료 중심",
+   "open": ["##..##","#....#","......","......","#....#","##..##"],
+   "kinds": ["......",".d..d.","......","......",".d..d.","......"],
+   "steps": [[[1,0],[4,0],[0,1],[5,1],[0,4],[5,4]],[[0,0],[5,0],[0,5],[5,5],[1,5],[4,5]]],
+   "start": [["slime",1,2],["slime",2,2],["fire",3,2],["water",4,2]],
+   "shop": ["poison","slime","mage"],
+   "bench": ["any","any","mat"]
+  },
+  "smith": {
+   "name": "대장장이의 짐수레",
+   "desc": "가로 6×4 · 아랫줄 방패 칸 · 골렘 방어선",
+   "open": ["......","......","......","......","######","######"],
+   "kinds": ["......","......","......","ssssss","......","......"],
+   "steps": [[[0,4],[1,4],[2,4],[3,4],[4,4],[5,4]],[[0,5],[1,5],[2,5],[3,5],[4,5],[5,5]]],
+   "start": [["golem",0,2],["slime",3,3],["slime",4,3]],
+   "shop": ["golem","slime","fire"],
+   "bench": ["any","any","any","any"]
+  }
+ },
+ "groupBonus": [{"hp":1,"atk":1},{"hp":1.05,"atk":1},{"hp":1.1,"atk":1.1},{"hp":1.15,"atk":1.15},{"hp":1.2,"atk":1.2}],
+ "enemies": {
+  "skeleton": {"name":"스켈레톤","hp":64,"atk":6,"rate":0.8,"range":22,"speed":33,"weak":"fire","res":"poison"},
+  "orc": {"name":"오크","hp":130,"atk":12,"rate":0.55,"range":22,"speed":25,"weak":"poison","res":"fire"},
+  "slime": {"name":"슬라임","hp":70,"atk":6,"rate":1,"range":22,"speed":36,"weak":"fire","res":"water"},
+  "goblin": {"name":"고블린 궁수","hp":48,"atk":8,"rate":0.8,"range":140,"speed":33,"weak":"water","res":null},
+  "golem": {"name":"골렘","hp":240,"atk":11,"rate":0.45,"range":27,"speed":23,"weak":"water","res":"poison"},
+  "mage": {"name":"마법사","hp":55,"atk":14,"rate":0.4,"range":125,"speed":30,"weak":"fire","res":null}
+ },
+ "encounters": [
+  {"skeleton":1},
+  {"skeleton":7,"slime":3},
+  {"skeleton":55,"slime":25,"orc":20},
+  {"skeleton":50,"goblin":25,"slime":25},
+  {"slime":25,"goblin":25,"orc":25,"skeleton":25},
+  {"skeleton":35,"orc":25,"mage":20,"goblin":20},
+  {"slime":30,"orc":30,"goblin":20,"mage":20},
+  {"skeleton":40,"goblin":30,"mage":30},
+  {"golem":20,"orc":25,"slime":30,"goblin":25},
+  {"golem":25,"mage":25,"orc":25,"skeleton":25},
+  {"golem":25,"orc":25,"mage":25,"goblin":25},
+  {"golem":20,"orc":30,"mage":25,"skeleton":25}
+ ],
+ "bosses": {
+  "4": {"type":"orc","name":"오크 대장","trait":"rage","desc":"체력 50% 이하에서 공격력 ×1.5"},
+  "8": {"type":"skeleton","name":"해골왕","trait":"revive","desc":"쓰러져도 한 번 부활(체력 40%)"},
+  "12": {"type":"golem","name":"거신 골렘","trait":"armor","desc":"받는 피해 25% 감소"}
+ },
+ "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":5,"enemyCountPerWave":0.9,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
+ "tune": [
+  {"hp":1.834,"atk":1.354},
+  {"hp":2.674,"atk":1.635},
+  {"hp":2.674,"atk":1.635},
+  {"hp":1.389,"atk":1.178},
+  {"hp":3.107,"atk":1.763},
+  {"hp":2.407,"atk":1.551},
+  {"hp":1.851,"atk":1.361},
+  {"hp":1.727,"atk":1.314},
+  {"hp":1.874,"atk":1.369},
+  {"hp":1.328,"atk":1.153},
+  {"hp":1.048,"atk":1.024},
+  {"hp":0.757,"atk":0.87}
+ ]
+}

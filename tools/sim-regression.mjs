@@ -10,9 +10,11 @@ import {createRequire} from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {readData,jsText,JS_FILE} from './data-io.mjs';
 
 const {chromium}=createRequire(import.meta.url)('playwright');
 const arg=(k,d)=>{const i=process.argv.indexOf('--'+k);return i<0?d:process.argv[i+1];};
+if(fs.readFileSync(JS_FILE,'utf8')!==jsText(readData())){console.error('data/game-data.js is out of date: run node tools/build-data.mjs');process.exit(1);}
 const SEEDS=+arg('seeds',6),HARD=+arg('hard',1),HEADLESS=process.argv.includes('--headless'),OUT=arg('out',null);
 const dir=path.dirname(fileURLToPath(import.meta.url)),file=path.resolve(arg('root',path.join(dir,'..')),'index.html');
 const HARNESS=fs.readFileSync(path.join(dir,'balance-harness.js'),'utf8');
