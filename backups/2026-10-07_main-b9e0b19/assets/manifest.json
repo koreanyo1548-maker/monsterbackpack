@@ -1,0 +1,206 @@
+{
+  "slime": {
+    "source": "prep",
+    "crop": [
+      249,
+      678,
+      381,
+      776
+    ],
+    "size": [
+      136,
+      102
+    ]
+  },
+  "fireSlime": {
+    "source": "prep",
+    "crop": [
+      95,
+      1260,
+      280,
+      1401
+    ],
+    "size": [
+      144,
+      140
+    ]
+  },
+  "goblin": {
+    "source": "prep",
+    "crop": [
+      558,
+      652,
+      698,
+      780
+    ],
+    "size": [
+      144,
+      138
+    ]
+  },
+  "golem": {
+    "source": "prep",
+    "crop": [
+      654,
+      1240,
+      887,
+      1403
+    ],
+    "size": [
+      209,
+      158
+    ]
+  },
+  "mage": {
+    "source": "prep",
+    "crop": [
+      92,
+      791,
+      237,
+      926
+    ],
+    "size": [
+      147,
+      140
+    ]
+  },
+  "water": {
+    "source": "prep",
+    "crop": [
+      577,
+      938,
+      677,
+      1064
+    ],
+    "size": [
+      88,
+      128
+    ]
+  },
+  "poison": {
+    "source": "prep",
+    "crop": [
+      715,
+      943,
+      841,
+      1064
+    ],
+    "size": [
+      125,
+      126
+    ]
+  },
+  "fire": {
+    "source": "prep",
+    "crop": [
+      400,
+      1246,
+      540,
+      1400
+    ],
+    "size": [
+      124,
+      159
+    ]
+  },
+  "skeleton": {
+    "source": "supplied uncropped art",
+    "size": [
+      107,
+      108
+    ]
+  },
+  "orc": {
+    "source": "supplied uncropped art",
+    "size": [
+      155,
+      125
+    ]
+  },
+  "panel": {
+    "source": "prep",
+    "crop": [
+      31,
+      136,
+      910,
+      446
+    ],
+    "size": [
+      879,
+      310
+    ]
+  },
+  "card": {
+    "source": "prep",
+    "crop": [
+      338,
+      1232,
+      622,
+      1502
+    ],
+    "size": [
+      284,
+      270
+    ]
+  },
+  "button": {
+    "source": "prep",
+    "crop": [
+      433,
+      1531,
+      912,
+      1637
+    ],
+    "size": [
+      479,
+      106
+    ]
+  },
+  "secondary": {
+    "source": "prep",
+    "crop": [
+      33,
+      1531,
+      411,
+      1637
+    ],
+    "size": [
+      378,
+      106
+    ]
+  },
+  "cell": {
+    "source": "prep",
+    "crop": [
+      398,
+      793,
+      544,
+      923
+    ],
+    "size": [
+      146,
+      130
+    ]
+  },
+  "backdrop": {
+    "source": "prep",
+    "crop": [
+      6,
+      460,
+      27,
+      1220
+    ],
+    "size": [
+      40,
+      800
+    ]
+  },
+  "battlefield": {
+    "source": "battle",
+    "crop": "empty floor and perimeter crops",
+    "size": [
+      941,
+      1240
+    ]
+  }
+}
