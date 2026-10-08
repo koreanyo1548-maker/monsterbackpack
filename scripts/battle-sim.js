@@ -11,15 +11,30 @@
 //   attack(unit, target, nx, ny)       a unit started an attack (nx/ny = unit direction to the target)
 //   moved(unit, dt)                    a unit walked this tick  projectile(p) / projectileMoved(p)
 //   ended(won)                         the battle is decided
+//
+// Combat randomness comes from the sim's own seeded stream (seed() before building the units), never Math.random,
+// so a battle replays identically whatever the view does with its own random effects.
 window.createBattleSim = function createBattleSim(cfg) {
   const {W, H, ENEMY, ELEM, unitDefs} = cfg;
   const NOBODY = {};
   const on = b => b.listener || NOBODY;
   let unitId = 1;
+  let rand = Math.random;
+  // mulberry32: small, fast and identical in any language, so a port can reproduce battles from the seed.
+  function seed(n) {
+    let a = n >>> 0;
+    rand = () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
 
   function unit(type, team, x, y, opts = {}) {
     const d = unitDefs[type] || {hp: type === 'orc' ? 155 : 64, atk: type === 'orc' ? 15 : 7, rate: type === 'orc' ? .55 : .8, range: 22, speed: type === 'orc' ? 25 : 33};
-    const u = {id: unitId++, type, team, x, y, hp: d.hp, maxHp: d.hp, atk: d.atk, rate: d.rate, range: d.range, speed: d.speed, aff: 'none', cd: Math.random() * .6, phase: Math.random() * 6.28, flash: 0, swing: 0, dir: team === 0 ? 1 : -1, burn: 0, burnDps: 0, poison: 0, poisonDps: 0, stacks: 0, slow: 0, healClock: 0, moving: false, deadFor: 0, boss: false, ...opts};
+    const u = {id: unitId++, type, team, x, y, hp: d.hp, maxHp: d.hp, atk: d.atk, rate: d.rate, range: d.range, speed: d.speed, aff: 'none', cd: rand() * .6, flash: 0, swing: 0, dir: team === 0 ? 1 : -1, burn: 0, burnDps: 0, poison: 0, poisonDps: 0, stacks: 0, slow: 0, healClock: 0, moving: false, deadFor: 0, boss: false, ...opts};
     u.maxHp = u.hp;
     return u;
   }
@@ -130,7 +145,7 @@ window.createBattleSim = function createBattleSim(cfg) {
       if (best) eg.set(best, (eg.get(best) || 0) + 1);
     }
     u.target = best;
-    u.retarget = .45 + Math.random() * .3;
+    u.retarget = .45 + rand() * .3;
     return best;
   }
 
@@ -291,5 +306,5 @@ window.createBattleSim = function createBattleSim(cfg) {
     }
   }
 
-  return {unit, step, elemMult, isMelee, reachOf, bodySize};
+  return {seed, unit, step, elemMult, isMelee, reachOf, bodySize};
 };
