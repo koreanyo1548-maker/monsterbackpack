@@ -101,6 +101,21 @@ window.GAME_DATA = {
   "12": {"type":"golem","name":"거신 골렘","trait":"armor","desc":"받는 피해 25% 감소"}
  },
  "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":5,"enemyCountPerWave":0.9,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
+ "run": {
+  "startGold": 5,
+  "finalWave": 12,
+  "bossEvery": 4,
+  "rerollBase": 2,
+  "curseCost": 4,
+  "sellDivisor": 2,
+  "startingStatus": "playing",
+  "shopPool": ["slime","slime","slime","goblin","goblin","golem","mage","skeleton","skeleton","orc","fire","water","poison","life"],
+  "winGold": {"base":6,"regionStep":4,"boss":12},
+  "bossReward": {"gold":10,"expandFallback":12,"cursed":18},
+  "mutationChance": {"complex":0.5,"withStill":0.75},
+  "kindBonus": {"banner":{"stat":"atk","v":0.15},"shield":{"stat":"hp","v":0.2}},
+  "auraCap": 0.6
+ },
  "field": {"width":440,"height":540},
  "tune": [
   {"hp":1.834,"atk":1.354},
