@@ -28,7 +28,7 @@ function powerOf(p){const out={hp:1,atk:1,rate:1,tags:[]};if(D[p.type].material|
  for(const k of ['hp','atk','rate'])out[k]+=Math.min(.6,add[k]);return out;}
 function groups(){const b=state.board,c=state.cols,seen=new Set(),out=[];for(const p of state.pieces){if(D[p.type].material||seen.has(p.id))continue;const todo=[p],ps=[];seen.add(p.id);while(todo.length){const a=todo.pop();ps.push(a);for(const i of pieceIdx(a))for(const n of neighbors(i,c,b.length)){const q=b[n];if(q&&q!==a&&q.type===p.type&&q.aff===p.aff&&!seen.has(q.id)){seen.add(q.id);todo.push(q);}}}out.push({pieces:ps,cells:ps.flatMap(a=>pieceIdx(a)),type:p.type,aff:p.aff,count:ps.length*D[p.type].count});}return out;}
 function neighbors(i,c,n){return [i%c>0?i-1:-1,i%c<c-1?i+1:-1,i-c,i+c].filter(j=>j>=0&&j<n);}
-function bonus(n){return GD.groupBonus[n>=1&&n<5?n-1:4];}
+function bonus(n){return Sim.groupBonus(n);}
 function selectedIndex(){const p=state.pieces.find(q=>q.id===selected);return p?pieceIdx(p)[0]:-1;}
 function groupAt(i){return groups().find(g=>g.cells.includes(i));}
 function totalCount(){return groups().reduce((s,g)=>s+g.count,0);}

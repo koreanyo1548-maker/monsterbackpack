@@ -101,6 +101,7 @@ window.GAME_DATA = {
   "12": {"type":"golem","name":"거신 골렘","trait":"armor","desc":"받는 피해 25% 감소"}
  },
  "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":5,"enemyCountPerWave":0.9,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
+ "field": {"width":440,"height":540},
  "tune": [
   {"hp":1.834,"atk":1.354},
   {"hp":2.674,"atk":1.635},

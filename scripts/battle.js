@@ -1,21 +1,15 @@
 // Battle setup and flow: bag -> battlefield, camera, intro fly-in, start/finish, rewards.
 'use strict';
-// Battle simulation: board data is snapshotted; battlefield units never mutate owned pieces.
-const W=440,H=540;
-const Sim=createBattleSim({W,H,ENEMY,ELEM,unitDefs:D}),{unit,isMelee,reachOf}=Sim;
-function formation(n){const t=Math.max(0,Math.min(1,(n-6)/40));return {sx:42+22*t,gap:40+32*t};}
-function buildBattle(){const battleSeed=Math.floor(Math.random()*4294967296);Sim.seed(battleSeed);const c=state.cols,gs=groups(),op=state.open.map((o,i)=>o?i:-1).filter(i=>i>=0),ocx=(Math.min(...op.map(i=>i%c))+Math.max(...op.map(i=>i%c)))/2,or0=Math.min(...op.map(i=>Math.floor(i/c))),r=Math.max(...op.map(i=>Math.floor(i/c)))-or0+1,n=gs.reduce((s,g)=>s+g.count,0),{sx,gap}=formation(n),mid=H*.47,front=mid+gap,sy=Math.min(sx*.7,(H-40-front)/Math.max(1,r-1));
- // Bag top row = front line. Every piece starts on the battlefield exactly where it sat in the bag.
- const cellPos=i=>({x:W/2+((i%c)-ocx)*sx,y:front+(Math.floor(i/c)-or0)*sy});const allies=[];
- for(const g of gs){const d=D[g.type],b=bonus(g.pieces.length);for(const pp of g.pieces){const pc=pieceIdx(pp),i=pc[0],p={x:W/2+(pc.reduce((a,k)=>a+k%c,0)/pc.length-ocx)*sx,y:front+(pc.reduce((a,k)=>a+Math.floor(k/c),0)/pc.length-or0)*sy},pw=powerOf(pp);for(let j=0;j<d.count;j++){const ox=d.count>1?(j-(d.count-1)/2)*sx*.42:0,oy=d.count>1?(j%2?-1:1)*sy*.12:0;allies.push(unit(g.type,0,p.x+ox,p.y+oy,{aff:g.aff,hp:d.hp*b.hp*pw.hp,atk:d.atk*b.atk*pw.atk,rate:d.rate*pw.rate,cell:i,slot:j,slots:d.count,pid:pp.id}));}}}
- const wave=state.wave,boss=wave%4===0,scale=eHp(wave),en=GD.scaling.enemyBaseCount+Math.floor(wave*GD.scaling.enemyCountPerWave),ecols=Math.min(7,Math.max(3,Math.ceil(Math.sqrt(en*1.6)))),efront=mid-gap,esy=Math.min(sy,32),enemies=[];
- const order=encounter(wave).list.flatMap(o=>Array(o.count).fill(o.type)).sort((a,b)=>(ENEMY[a].range>60)-(ENEMY[b].range>60));
- for(let i=0;i<en;i++){const type=order[i],E=ENEMY[type],row=Math.floor(i/ecols),inRow=Math.min(ecols,en-row*ecols),col=i%ecols;enemies.push(unit(type,1,W/2+(col-(inRow-1)/2)*sx*.95,efront-row*esy,{hp:E.hp*scale,atk:E.atk*eAtk(wave),rate:E.rate,range:E.range,speed:E.speed}));}
- if(boss){const B=BOSS[wave],BS=GD.scaling.boss;enemies.push(unit(B.type,1,W/2,Math.max(46,efront-Math.ceil(en/ecols)*esy-16),{hp:BS.hp*scale,atk:BS.atk*Math.pow(BS.atkGrowth,wave)*TUNE[wave-1].atk,rate:BS.rate,range:BS.range,speed:BS.speed,boss:true,trait:B.trait}));}
- const pieceList=[],adj=new Map();for(const g of gs)for(const pp of g.pieces)pieceList.push({pid:pp.id,type:pp.type,aff:g.aff,skillCd:pp.type==='mage'?4:0,icd:0,pulse:-9,cells:pieceIdx(pp)});for(const pc of pieceList){const set=new Set();for(const i of pc.cells)for(const n of neighbors(i,c,state.board.length)){const q=state.board[n];if(q&&q.id!==pc.pid&&!D[q.type].material)set.add(q.id);}adj.set(pc.pid,set);}
+// Bag -> battle. The rules live in Sim.createBattle (scripts/battle-sim.js); this snapshots the bag into plain data
+// for it and adds what only the view needs (listener, effect lists, deploy grid, camera, intro).
+function buildBattle(){
+ const seed=Math.floor(Math.random()*4294967296);
+ const groupData=groups().map(g=>({type:g.type,aff:g.aff,pieces:g.pieces.map(pp=>({id:pp.id,cells:pieceIdx(pp),power:powerOf(pp)}))}));
+ const b=Sim.createBattle({seed,wave:state.wave,cols:state.cols,open:state.open,groups:groupData,cellPiece:state.board.map(p=>p&&!D[p.type].material?p.id:null)});
+ const {sx,sy,cellPos}=b.layout;
  const cells=state.board.map((p,i)=>state.open[i]?{...cellPos(i),color:p&&!D[p.type].material?AFF[p.aff].color:null}:null).filter(Boolean);
- const units=[...allies,...enemies];for(const u of units)u.phase=Math.random()*6.28;
- return {seed:battleSeed,listener:battleView,units,time:0,started:performance.now(),allies:allies.length,initialEnemies:enemies.length,fx:[],parts:[],shake:0,projectiles:[],damage:[],end:false,stats:{damage:0,kills:0,by:{}},pieceList,adj,label:null,boss,grid:{cells,sx,sy},intro:null,cam:{x:W/2,y:H/2,s:1}};}
+ for(const u of b.units)u.phase=Math.random()*6.28;
+ return Object.assign(b,{listener:battleView,started:performance.now(),fx:[],parts:[],shake:0,damage:[],label:null,grid:{cells,sx,sy},intro:null,cam:{x:W/2,y:H/2,s:1}});}
 // Camera: zoom in on a small army, pull out as the army (or the melee) spreads.
 function fitBox(list){if(!list.length)return {x:W/2,y:H/2,s:1};let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;for(const u of list){const sz=u.boss?76:u.type==='golem'?57:43;x0=Math.min(x0,u.x-sz*.5);x1=Math.max(x1,u.x+sz*.5);y0=Math.min(y0,u.y-sz);y1=Math.max(y1,u.y+14);}const w=Math.max(150,x1-x0+56),h=Math.max(190,y1-y0+56);return clampCam({x:(x0+x1)/2,y:(y0+y1)/2,s:Math.max(1,Math.min(2,W/w,H/h))});}
 function clampCam(c){const vw=W/c.s/2,vh=H/c.s/2;c.x=Math.max(vw,Math.min(W-vw,c.x));c.y=Math.max(vh,Math.min(H-vh,c.y));return c;}

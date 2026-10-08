@@ -2,6 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id), SAVE='monster-backpack-v2';
 const GD=window.GAME_DATA,D=GD.units;
+const Sim=createBattleSim(GD),{W,H}=Sim;
 const AFF=GD.affinities;
 const RECIPES=GD.recipes;
 const FUSE=GD.fusions;

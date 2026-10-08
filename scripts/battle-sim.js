@@ -1,6 +1,10 @@
 // Battle simulation core: combat rules only. No DOM, canvas, audio or timers, so it can run headless
 // (tools/balance.mjs) and be ported to another engine.
 //
+// createBattle(setup) turns a plain description of the bag (see below) into a ready battle; step(battle, dt) advances it.
+//   setup = {seed, wave, cols, open: [bool per cell], cellPiece: [piece id or null per cell, materials excluded],
+//            groups: [{type, aff, pieces: [{id, cells: [cell index], power: {hp, atk, rate}}]}]}
+//
 // The view reacts through `battle.listener`; every method is optional and is called inline, at the exact point
 // the rule fires, so the order of random draws never depends on whether a view is attached:
 //   hit(target, source, amount, dot)   hp was reduced        shieldAbsorb(target)       a barrier soaked a hit
@@ -14,8 +18,9 @@
 //
 // Combat randomness comes from the sim's own seeded stream (seed() before building the units), never Math.random,
 // so a battle replays identically whatever the view does with its own random effects.
-window.createBattleSim = function createBattleSim(cfg) {
-  const {W, H, ENEMY, ELEM, unitDefs} = cfg;
+window.createBattleSim = function createBattleSim(data) {
+  const unitDefs = data.units, ENEMY = data.enemies, ELEM = data.elements, scaling = data.scaling;
+  const {width: W, height: H} = data.field;
   const NOBODY = {};
   const on = b => b.listener || NOBODY;
   let unitId = 1;
@@ -210,6 +215,72 @@ window.createBattleSim = function createBattleSim(cfg) {
     }
   }
 
+  // ---- Battle setup: bag layout -> battlefield units ----
+  const groupBonus = n => data.groupBonus[n >= 1 && n < 5 ? n - 1 : 4];
+  const eHp = w => Math.pow(scaling.enemyHpGrowth, w - 1) * data.tune[w - 1].hp;
+  const eAtk = w => Math.pow(scaling.enemyAtkGrowth, w - 1) * data.tune[w - 1].atk;
+  const formation = n => { const t = Math.max(0, Math.min(1, (n - 6) / 40)); return {sx: 42 + 22 * t, gap: 40 + 32 * t}; };
+  const neighbors = (i, c, n) => [i % c > 0 ? i - 1 : -1, i % c < c - 1 ? i + 1 : -1, i - c, i + c].filter(j => j >= 0 && j < n);
+
+  // Enemy list for a wave: counts follow the weights in data.encounters, rounded by largest remainder.
+  function encounter(w) {
+    const wts = data.encounters[w - 1], en = scaling.enemyBaseCount + Math.floor(w * scaling.enemyCountPerWave);
+    const keys = Object.keys(wts), sum = keys.reduce((a, k) => a + wts[k], 0);
+    const list = keys.map(k => ({type: k, count: Math.floor(wts[k] / sum * en), rem: (wts[k] / sum * en) % 1}));
+    let left = en - list.reduce((a, o) => a + o.count, 0);
+    list.slice().sort((a, b) => b.rem - a.rem).forEach(o => { if (left > 0) { o.count++; left--; } });
+    return {list: list.filter(o => o.count > 0), total: en, boss: data.bosses[w] || null};
+  }
+
+  function createBattle(setup) {
+    seed(setup.seed);
+    const c = setup.cols, gs = setup.groups, wave = setup.wave;
+    // Bag top row = front line. Every piece starts on the battlefield exactly where it sat in the bag.
+    const op = setup.open.map((o, i) => o ? i : -1).filter(i => i >= 0);
+    const ocx = (Math.min(...op.map(i => i % c)) + Math.max(...op.map(i => i % c))) / 2, or0 = Math.min(...op.map(i => Math.floor(i / c)));
+    const r = Math.max(...op.map(i => Math.floor(i / c))) - or0 + 1;
+    const n = gs.reduce((s, g) => s + g.pieces.length * unitDefs[g.type].count, 0), {sx, gap} = formation(n);
+    const mid = H * .47, front = mid + gap, sy = Math.min(sx * .7, (H - 40 - front) / Math.max(1, r - 1));
+    const cellPos = i => ({x: W / 2 + ((i % c) - ocx) * sx, y: front + (Math.floor(i / c) - or0) * sy});
+
+    const allies = [];
+    for (const g of gs) {
+      const d = unitDefs[g.type], b = groupBonus(g.pieces.length);
+      for (const pp of g.pieces) {
+        const pc = pp.cells, pw = pp.power;
+        const p = {x: W / 2 + (pc.reduce((a, k) => a + k % c, 0) / pc.length - ocx) * sx, y: front + (pc.reduce((a, k) => a + Math.floor(k / c), 0) / pc.length - or0) * sy};
+        for (let j = 0; j < d.count; j++) {
+          const ox = d.count > 1 ? (j - (d.count - 1) / 2) * sx * .42 : 0, oy = d.count > 1 ? (j % 2 ? -1 : 1) * sy * .12 : 0;
+          allies.push(unit(g.type, 0, p.x + ox, p.y + oy, {aff: g.aff, hp: d.hp * b.hp * pw.hp, atk: d.atk * b.atk * pw.atk, rate: d.rate * pw.rate, cell: pc[0], slot: j, slots: d.count, pid: pp.id}));
+        }
+      }
+    }
+
+    const boss = wave % 4 === 0, scale = eHp(wave), en = scaling.enemyBaseCount + Math.floor(wave * scaling.enemyCountPerWave);
+    const ecols = Math.min(7, Math.max(3, Math.ceil(Math.sqrt(en * 1.6)))), efront = mid - gap, esy = Math.min(sy, 32), enemies = [];
+    const order = encounter(wave).list.flatMap(o => Array(o.count).fill(o.type)).sort((a, b) => (ENEMY[a].range > 60) - (ENEMY[b].range > 60));
+    for (let i = 0; i < en; i++) {
+      const type = order[i], E = ENEMY[type], row = Math.floor(i / ecols), inRow = Math.min(ecols, en - row * ecols), col = i % ecols;
+      enemies.push(unit(type, 1, W / 2 + (col - (inRow - 1) / 2) * sx * .95, efront - row * esy, {hp: E.hp * scale, atk: E.atk * eAtk(wave), rate: E.rate, range: E.range, speed: E.speed}));
+    }
+    if (boss) {
+      const B = data.bosses[wave], BS = scaling.boss;
+      enemies.push(unit(B.type, 1, W / 2, Math.max(46, efront - Math.ceil(en / ecols) * esy - 16), {hp: BS.hp * scale, atk: BS.atk * Math.pow(BS.atkGrowth, wave) * data.tune[wave - 1].atk, rate: BS.rate, range: BS.range, speed: BS.speed, boss: true, trait: B.trait}));
+    }
+
+    const pieceList = [], adj = new Map();
+    for (const g of gs) for (const pp of g.pieces) pieceList.push({pid: pp.id, type: g.type, aff: g.aff, skillCd: g.type === 'mage' ? 4 : 0, icd: 0, pulse: -9, cells: pp.cells});
+    for (const pc of pieceList) {
+      const set = new Set();
+      for (const i of pc.cells) for (const nb of neighbors(i, c, setup.cellPiece.length)) {
+        const q = setup.cellPiece[nb];
+        if (q != null && q !== pc.pid) set.add(q);
+      }
+      adj.set(pc.pid, set);
+    }
+    return {seed: setup.seed, units: [...allies, ...enemies], time: 0, allies: allies.length, initialEnemies: enemies.length, projectiles: [], end: false, stats: {damage: 0, kills: 0, by: {}}, pieceList, adj, boss, layout: {sx, sy, cellPos}};
+  }
+
   function step(b, dt) {
     if (!b || b.end) return;
     const L = on(b);
@@ -306,5 +377,5 @@ window.createBattleSim = function createBattleSim(cfg) {
     }
   }
 
-  return {seed, unit, step, elemMult, isMelee, reachOf, bodySize};
+  return {W, H, seed, unit, createBattle, step, encounter, eHp, eAtk, groupBonus, elemMult, isMelee, reachOf, bodySize};
 };

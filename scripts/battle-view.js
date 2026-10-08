@@ -1,5 +1,6 @@
 // Battle view: canvas drawing, sticker animation, effects (battleView listener) and the frame loop.
 'use strict';
+const {reachOf}=Sim;
 function projectileDrawPoint(p){const v=p.visual;if(!v)return [p.x,p.y];const weight=Math.max(0,1-Math.hypot(p.x-v.x,p.y-v.y)/40);return [p.x+v.dx*weight,p.y+v.dy*weight];}
 const ctx=$('canvas').getContext('2d');
 function drawDeployGrid(){const it=battle.intro;if(!it&&battle.time>.6)return;const t=it?it.t:it===null?1.6+battle.time:1.6,a=t<.8?1:Math.max(0,1-(t-.8)/.9);if(a<=0)return;const {cells,sx,sy}=battle.grid,w=sx*.9,h=sy*.9;ctx.save();for(const c of cells){ctx.globalAlpha=a*(c.color?.75:.35);ctx.fillStyle=c.color?c.color+'33':'#1e1a1655';ctx.strokeStyle=c.color||'#ecdfbf';ctx.lineWidth=c.color?1.6:1;ctx.beginPath();ctx.roundRect?ctx.roundRect(c.x-w/2,c.y-h/2+6,w,h,5):ctx.rect(c.x-w/2,c.y-h/2+6,w,h);ctx.fill();ctx.stroke();}ctx.restore();}
