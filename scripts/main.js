@@ -1,0 +1,44 @@
+// Entry point: help, input handlers, mobile fitting, boot and the MonsterBackpack test hook.
+'use strict';
+function help(){modal(`<h2>작은 가방, 커다란 군단</h2><ol class="helpList"><li>상점에서 구매한 피스는 빈칸에 들어갑니다.</li><li>피스를 끌거나, 선택한 뒤 빈칸을 눌러 옮기세요. 골렘·마법사·고블린처럼 여러 칸을 차지하는 피스는 <b>회전</b> 버튼(R키)으로 돌릴 수 있습니다.</li><li>종류·속성이 같은 몬스터를 상하좌우로 연결하면 무리가 됩니다.</li><li>재료를 선택한 뒤 무리를 누르면 결과를 확인하고 변이할 수 있습니다.</li><li>슬라임 1피스는 2마리로 출전합니다. 전투는 자동으로 진행됩니다.</li><li>전투 화면 아래 피스 칸의 <b>링</b>이 다음 공격(마법사는 방벽)까지의 준비 상태입니다. 마법사는 8초마다 자신과 인접 피스에 보호막을, 고블린은 인접 아군이 쓰러지면 일제 사격을, 슬라임은 쓰러질 때 독 폭발을 일으키고 연쇄가 발동하면 해당 칸이 빛납니다.</li><li>재료 두 개가 붙어서 반짝이면 하나를 다른 쪽에 끌어(또는 선택 후 탭) <b>합성</b>할 수 있습니다. 합성 정수는 불꽃+물=증기, 독+생명=역병, 불꽃+독=폭염, 물+생명=샘물이며 변이가 실패하지 않습니다. 📖 도감에서 발견한 레시피와 적을 확인하세요.</li><li>가방 위 <b>예고 줄</b>(적 아이콘)을 누르면 다음 전투의 적 구성과 약점·저항을 볼 수 있습니다. 약점 속성이 맞으면 피해 ×1.5, 저항이면 ×0.5입니다.</li><li>가방이 가득 차면 <b>벤치</b>에 보관할 수 있습니다. 벤치 피스는 전투에 나가지 않고, 선택한 뒤 가방 빈칸을 누르면 꺼냅니다.</li><li>상점 카드의 📌로 한 장을 고정하면 리롤해도 남습니다. 리롤 비용은 라운드마다 2G부터 1G씩 오릅니다.</li><li>피스 가장자리의 ▶▲▼ 화살표 방향에 닿은 피스가 보너스를 받습니다. 가방 칸의 ⚑군기·⛨방패·⚗증류 표시도 확인하세요.</li></ol><p><b>복합 변이</b><br>불꽃 + 물 → 빙염 / 독 + 생명 → 맹독 생명<br>성공률 50%(증류 칸에 올라간 무리는 75%), 실패하면 재료만 소모됩니다.</p><p class="small">3지역 · 총 12전. 4전마다 보스. 아군 전멸 또는 60초 초과 시 원정 종료. 편성은 이 브라우저에 자동 저장됩니다.</p><div class="two"><button class="action secondary" data-action="askRestart">새 원정</button><button class="action" data-action="close">알겠어요</button></div>`);}
+$('shop').addEventListener('click',e=>{const pin=e.target.closest('[data-pin]');if(pin){togglePin(+pin.dataset.pin);return;}const el=e.target.closest('[data-offer]');if(el)buy(+el.dataset.offer);});$('bench').addEventListener('click',e=>{if(e.target.closest('#sellSlot')){if(mode==='prepare'&&$('overlay').hidden)sell();return;}const b=e.target.closest('[data-b]');if(b)benchTap(+b.dataset.b);});$('info').onclick=()=>{if(mode==='prepare'&&!drag&&$('overlay').hidden){infoOpen=!infoOpen;render();}};$('stow').onclick=stow;$('reroll').onclick=reroll;$('fight').onclick=startBattle;$('sell').onclick=sell;$('rotate').onclick=rotate;$('foe').onclick=()=>{if(mode==='prepare')modal(foeHTML());};$('menuBtn').onclick=()=>{if(mode==='prepare'&&$('overlay').hidden)menu();};$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'▶':'Ⅱ';$('battleLabel').textContent=paused?'일시정지':'';};$('speed').onclick=()=>{speed=speed===1?2:1;$('speed').textContent=speed+'×';};
+$('modal').addEventListener('click',e=>{const bg=e.target.closest('[data-bag]');if(bg){const id=bg.dataset.bag;closeModal();newRun(id);return;}const r=e.target.closest('[data-reward]');if(r){claimReward(r.dataset.reward);return;}const a=e.target.closest('[data-action]')?.dataset.action;if(a==='close')closeModal();else if(a==='confirmMutation'||a==='confirmSell'){const f=modalCallback;f?.();}else if(a==='menuCodex'){modal(codexHTML());$('modal').scrollTop=0;}else if(a==='menuHelp')help();else if(a==='next')nextRound();else if(a==='bossReward')bossReward();else if(a==='restart'){closeModal();newRun();}else if(a==='askRestart')modal(`<h2>새 원정을 시작할까요?</h2><p>현재 군단과 골드는 초기화됩니다.</p><div class="two"><button class="action secondary" data-action="close">돌아가기</button><button class="action" data-action="restart">새 원정</button></div>`);});
+$('board').addEventListener('pointerdown',e=>{const c=e.target.closest('.cell');if(!c||c.classList.contains('lock')||mode!=='prepare'||!$('overlay').hidden)return;const i=+c.dataset.i;drag={from:i,x:e.clientX,y:e.clientY,moved:false,pointer:e.pointerId};$('board').setPointerCapture?.(e.pointerId);});
+$('board').addEventListener('pointermove',e=>{if(!drag)return;const p=state.board[drag.from];if(!p)return;if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>8)drag.moved=true;if(!drag.moved)return;e.preventDefault();$('ghost').style.display='block';$('ghost').style.left=(e.clientX-40)+'px';$('ghost').style.top=(e.clientY-48)+'px';$('ghost').innerHTML=pic(p);document.querySelectorAll('.cell.target').forEach(x=>x.classList.remove('target'));const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.cell');target?.classList.add('target');if(target&&D[p.type].material){const i=+target.dataset.i,r=mutationResult(drag.from,i);if(r)$('info').innerHTML=infoPanel(i,r.aff);}});
+function stopDrag(e,cancel=false){if(!drag)return;const d=drag;drag=null;$('ghost').style.display='none';document.querySelectorAll('.cell.target').forEach(x=>x.classList.remove('target'));if(cancel){render();return;}const c=document.elementFromPoint(e.clientX,e.clientY)?.closest('.cell'),bs=d.moved?document.elementFromPoint(e.clientX,e.clientY)?.closest('.bslot'):null;if(bs){if(bs.id==='sellSlot'){const sp=state.board[d.from];if(sp){selected=sp.id;render();sell();}else render();return;}const bp=state.board[d.from],k=+bs.dataset.b;if(bp&&!state.bench[k]&&benchOK(k,bp))stowTo(bp,k);else{render();toast('그 슬롯에는 보관할 수 없습니다');}return;}if(d.moved){if(c)move(d.from,+c.dataset.i);else render();}else if(c)selectCell(+c.dataset.i);}
+$('board').addEventListener('pointerup',e=>stopDrag(e));$('board').addEventListener('pointercancel',e=>stopDrag(e,true));$('board').addEventListener('click',e=>{if(e.detail===0){const c=e.target.closest('.cell');if(c)selectCell(+c.dataset.i);}});document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='battle'&&!battle.end){paused=true;$('pause').textContent='▶';$('battleLabel').textContent='일시정지';}});document.addEventListener('keydown',e=>{if((e.key==='r'||e.key==='R')&&mode==='prepare'&&$('overlay').hidden)rotate();if(e.key==='Escape'&&!$('overlay').hidden&&mode==='prepare'&&state&&state.status==='playing')closeModal();});
+// Fit square cells and the original 440×540 battlefield inside the available viewport.
+function fitMobile(){
+ if(!state)return;
+ const slot=$(mode==='prepare'?'boardSlot':'arenaSlot');if(!slot)return;
+ const w=slot.clientWidth,h=slot.clientHeight;if(w<=0||h<=0)return;
+ if(mode==='prepare'){
+  const c=state.cols,r=state.rows,gap=3,pad=8,sx=10,sy=8;
+  const rail=Math.floor(Math.min((w-pad-gap*(c-1)-sx)/(c+1),(h-pad-gap*(r-1))/r)),row=Math.floor(Math.min((w-pad-gap*(c-1))/c,(h-pad-gap*(r-1)-sy)/(r+1)));
+  const useRail=rail>=row,cell=Math.max(1,useRail?rail:row),bw=cell*c+gap*(c-1)+pad,bh=cell*r+gap*(r-1)+pad,wr=$('bwrap');
+  wr.classList.toggle('rail',useRail);wr.classList.toggle('row',!useRail);wr.style.setProperty('--cs',cell+'px');
+  $('board').style.width=bw+'px';$('board').style.height=bh+'px';$('board').style.gridTemplateRows=`repeat(${r},minmax(0,1fr))`;
+  $('bench').style.height=useRail?bh+'px':'auto';$('bench').style.width=useRail?'auto':bw+'px';
+ }else{
+  const scale=Math.min((w-4)/440,(h-4)/540);
+  $('arena').style.width=(Math.floor(440*scale)+4)+'px';
+  $('arena').style.height=(Math.floor(540*scale)+4)+'px';
+  const dpr=Math.min(3,window.devicePixelRatio||1),cv=$('canvas'),bw=Math.round(Math.floor(440*scale)*dpr),bh=Math.round(Math.floor(540*scale)*dpr);
+  if(cv.width!==bw||cv.height!==bh){cv.width=bw;cv.height=bh;}
+ }
+}
+function viewportChanged(){
+ document.documentElement.style.setProperty('--view-height',Math.floor(window.visualViewport?.height||window.innerHeight)+'px');
+ requestAnimationFrame(fitMobile);
+}
+if(!window.__TEST__){
+ window.addEventListener('resize',viewportChanged);
+ window.visualViewport?.addEventListener('resize',viewportChanged);
+ if(typeof ResizeObserver!=='undefined'){
+  const observer=new ResizeObserver(()=>requestAnimationFrame(fitMobile));
+  observer.observe($('boardSlot'));observer.observe($('arenaSlot'));
+ }
+ viewportChanged();
+}
+async function boot(){await Promise.all(Object.entries(stickerRigs).map(([type,entry])=>entry.renderer.load().catch(error=>console.warn(`${type} 파츠를 불러오지 못해 조립된 이미지로 표시합니다.`,error))));for(const k of ['panel','card','button','secondary','cell','backdrop'])document.documentElement.style.setProperty('--'+k,`url("${new URL(ASSETS[k],document.baseURI).href}")`);await Promise.all(Object.entries(ASSETS).map(([k,url])=>new Promise(resolve=>{const im=new Image();im.onload=()=>{images[k]=im;resolve();};im.onerror=resolve;im.src=url;})));if(!restore()){newRun();}else{render();if(state.status==='reward')bossReward();else if(state.status==='between')nextRound();else if(['cleared','defeated'].includes(state.status))modal(`<h2>${state.status==='cleared'?'지난 원정 클리어':'지난 원정 종료'}</h2><p>${state.wins}승 · 변이 ${state.mutations}회</p><button class="action" data-action="restart">새 원정 시작</button>`);else toast('저장된 군단을 불러왔습니다');}requestAnimationFrame(loop);}
+window.MonsterBackpack={groups,bonus,mutationResult,buildBattle,simulate,getState:()=>state,getBattle:()=>battle,newRun,buy,move,applyMutation,startBattle,expand,claimReward,finishBattle,nextRound,codex:()=>codex,fusionResult,applyFusion,noteCodex,setTestState:s=>{state=s;state.nextId=1000;if(state.pieces)rebuild();},powerOf,BAGS,stow,benchTap,stash,rerollCost,togglePin,rotate,place,shapeOf,pieceIdx,setTestBattle:b=>battle=b};if(!window.__TEST__)boot();
