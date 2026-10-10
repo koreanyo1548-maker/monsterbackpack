@@ -34,6 +34,21 @@ function play(seed){
   }
   return {log,final:JSON.stringify({...st,board:undefined})};
 }
+// Aura recipients (what the UI lights up) must agree with powerOf (what the battle uses).
+function checkAura(){
+  const Rules=sandbox.createRunRules(readData()),st=Rules.createRun('smith',rng(1));
+  const slime=Rules.newPiece(st,'slime');slime.x=0;slime.y=1;st.pieces.push(slime);Rules.rebuild(st);
+  const golem=st.pieces.find(p=>p.type==='golem'),t=Rules.auraTargets(st,golem);
+  const up=t.find(x=>x.dir[1]===-1),down=t.find(x=>x.dir[1]===1);
+  if(up.pieces.join()!==String(slime.id)||down.pieces.length)throw new Error('golem aura targets wrong: '+JSON.stringify(t));
+  for(const p of st.pieces)for(const q of st.pieces){
+    if(p===q)continue;
+    const listed=Rules.auraTargets(st,p).some(x=>x.pieces.includes(q.id)),applied=Rules.powerOf(st,q).tags.some(g=>g.kind==='aura'&&g.from===p.type);
+    if(listed!==applied)throw new Error(`aura mismatch ${p.type} -> ${q.type}: listed ${listed}, applied ${applied}`);
+  }
+  console.log('aura targets agree with powerOf (golem lights up the slime above it)');
+}
+checkAura();
 const seed=arg('seed',1),a=play(seed),b=play(seed);
 console.log(a.log.join('\n'));
 if(a.final!==b.final||a.log.join()!==b.log.join()){console.error('NOT deterministic');process.exit(1);}

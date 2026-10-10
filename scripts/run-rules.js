@@ -94,6 +94,23 @@ window.createRunRules = function createRunRules(data) {
     return out;
   }
 
+  // Who receives p's auras: [{stat, v, dir, pieces: [ids of pieces covered by that aura]}], using the same adjacency
+  // rule as powerOf. Materials never receive anything.
+  function auraTargets(st, p) {
+    if (!AURA[p.type] || !st.pieces.includes(p)) return [];
+    const pc = pieceIdx(st, p), c = st.cols;
+    return AURA[p.type].map(a => {
+      const d = rotDir(a.d, p.rot), ids = new Set();
+      for (const i of pc) {
+        const x = i % c + d[0], y = Math.floor(i / c) + d[1];
+        if (x < 0 || x >= c || y < 0 || y >= st.rows) continue;
+        const q = st.board[y * c + x];
+        if (q && q !== p && !D[q.type].material) ids.add(q.id);
+      }
+      return {stat: a.stat, v: a.v, dir: d, pieces: [...ids]};
+    });
+  }
+
   // ---- Swarms: same type and affinity pieces touching each other ----
   function groups(st) {
     const b = st.board, c = st.cols, seen = new Set(), out = [];
@@ -385,7 +402,7 @@ window.createRunRules = function createRunRules(data) {
     return {best, bestN: score[best], hits, bad, total: enc.total};
   }
 
-  return {BAGS, shapeOf, rotDir, neighbors, pieceIdx, rebuild, fits, place, benchOK, stash, newPiece, cellKind, powerOf, groups, groupAt, totalCount,
+  return {BAGS, shapeOf, rotDir, neighbors, pieceIdx, rebuild, fits, place, benchOK, stash, newPiece, cellKind, powerOf, auraTargets, groups, groupAt, totalCount,
     linkedCount, expand, makeShop, createRun, restoreRun, rerollCost, reroll, togglePin, buy, sellInfo, applySell, stowTo, takeFromBench, benchSlotFor,
     unbenchAt, relocateFrom, move, rotate, mutationResult, applyMutation, fusionResult, applyFusion, fusableCells, settleBattle, advanceRound,
     claimReward, armyElems, foeAdvice};
