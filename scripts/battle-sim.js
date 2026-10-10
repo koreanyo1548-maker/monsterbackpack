@@ -41,7 +41,7 @@ window.createBattleSim = function createBattleSim(data) {
 
   function unit(type, team, x, y, opts = {}) {
     const d = unitDefs[type] || {hp: type === 'orc' ? 155 : 64, atk: type === 'orc' ? 15 : 7, rate: type === 'orc' ? .55 : .8, range: 22, speed: type === 'orc' ? 25 : 33};
-    const u = {id: unitId++, type, team, x, y, hp: d.hp, maxHp: d.hp, atk: d.atk, rate: d.rate, range: d.range, speed: d.speed, aff: 'none', cd: rand() * .6, flash: 0, swing: 0, dir: team === 0 ? 1 : -1, burn: 0, burnDps: 0, poison: 0, poisonDps: 0, stacks: 0, slow: 0, healClock: 0, moving: false, deadFor: 0, boss: false, ...opts};
+    const u = {id: unitId++, type, team, x, y, hp: d.hp, maxHp: d.hp, atk: d.atk, rate: d.rate, range: d.range, speed: d.speed, aff: 'none', cd: rand() * .6, flash: 0, swing: 0, dir: team === 0 ? 1 : -1, burn: 0, burnDps: 0, poison: 0, poisonDps: 0, stacks: 0, slow: 0, healClock: 0, moving: false, deadFor: 0, boss: false, windup: d.windup || 0, ...opts};
     u.maxHp = u.hp;
     return u;
   }
@@ -61,6 +61,9 @@ window.createBattleSim = function createBattleSim(data) {
   // Melee reach is body-to-body: units stop when their bodies touch instead of stacking inside each other.
   const reachOf = (u, v) => isMelee(u) ? rad(u) + rad(v) + (u.range - 22) * .5 + 3 : u.range;
 
+  // Units with a rigged attack animation need their wind-up to be seen before every hit. `windup` (seconds, from the
+  // data) is the natural length of that wind-up; it is shortened when the attack cycle is too fast to fit it.
+  const windupOf = u => u.windup > 0 ? Math.min(u.windup, .5 / u.rate) : 0;
   const pstat = (b, pid) => b.stats.by[pid] ??= {dmg: 0, kills: 0, skills: 0};
 
   function chain(b, pc, kind, ids = [], at = null) {
@@ -333,13 +336,18 @@ window.createBattleSim = function createBattleSim(data) {
       const dist = Math.hypot(nearest.x - u.x, nearest.y - u.y) || .01, reach = reachOf(u, nearest);
       const dx = nearest.x - u.x, dy = nearest.y - u.y;
       u.dir = dx >= 0 ? 1 : -1;
-      if (dist > reach) {
-        const stride = Math.min(dist - reach, u.speed * dt);
+      // A unit that has arrived stands still: float noise (dist a hair above reach) must not count as walking,
+      // otherwise it never shows its wind-up pose.
+      const stride = Math.min(dist - reach, u.speed * dt);
+      if (stride > 1e-6) {
         u.x += dx / dist * stride;
         u.y += dy / dist * stride;
         u.moving = true;
         L.moved?.(u, dt);
       }
+      // While walking the cooldown never drops below the wind-up, so arriving starts a full, visible wind-up
+      // instead of an instant, animation-less hit.
+      if (u.moving && u.windup > 0) u.cd = Math.max(u.cd, windupOf(u));
       u.cd -= dt * (u.slow > 0 ? .75 : 1);
       if (dist <= reach + 4 && u.cd <= 0) {
         u.cd = 1 / u.rate;
@@ -385,5 +393,5 @@ window.createBattleSim = function createBattleSim(data) {
     }
   }
 
-  return {W, H, seed, unit, createBattle, step, encounter, eHp, eAtk, groupBonus, elemMult, isMelee, reachOf, bodySize};
+  return {W, H, seed, unit, createBattle, step, encounter, eHp, eAtk, groupBonus, elemMult, isMelee, reachOf, bodySize, windupOf};
 };
