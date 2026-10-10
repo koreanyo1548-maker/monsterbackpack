@@ -19,6 +19,7 @@ scripts/
   prepare.js          준비 화면(상점, 벤치, 보드, 변이·합성)
   battle.js           가방을 setup 데이터로 만들어 Sim.createBattle에 넘기고 뷰 필드를 붙임, 카메라, 시작/종료, 보상
   battle-fx.js        스킬·상태이상 연출(부활, 독 폭발, 일제 사격, 방벽, 광란 등, 뷰 전용)
+- `scripts/sfx.js` — 전투 효과음(웹 오디오로 합성, 샘플 파일 없음). 공격자 종류별 타격음, 약점·저항·처치 음. 메뉴의 효과음 켜기/끄기 설정은 `monster-backpack-sound`에 저장됩니다.
   battle-view.js      canvas 그리기, 스티커 애니메이션, 이펙트(battleView), 프레임 루프
   main.js             입력, 모바일 맞춤, boot, 테스트용 window.MonsterBackpack
   sticker-renderer.js, archer-composer.js, mage-composer.js   스티커 파츠 합성
