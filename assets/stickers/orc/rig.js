@@ -19,7 +19,7 @@ window.ORC_STICKER = {
     keys: [
       { time: 0, sword: 0, bodyAngle: 0, freeArm: 0 },
       { time: .28, sword: 0, bodyAngle: 0, freeArm: 0 },
-      { time: .72, sword: 36, bodyAngle: 1.4, freeArm: -4 },
+      { time: .72, sword: 120, bodyAngle: 4.8, freeArm: -12 },
       { time: .88, sword: -32, bodyAngle: -2, freeArm: 6 },
       { time: 1, sword: -29, bodyAngle: -1.2, freeArm: 4.5 },
       { time: 1.14, sword: -17, bodyAngle: .6, freeArm: -2 },
