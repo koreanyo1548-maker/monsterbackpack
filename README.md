@@ -35,3 +35,4 @@ tools/                밸런스·회귀 검증과 스티커 빌드 스크립트
 - `node tools/rules-node.mjs [--seed 1]` — 브라우저 없이 Node에서 run-rules를 돌려 시드 재현성을 확인
 - `node tools/balance.mjs [--baseline] [--write]` — 웨이브별 `tune`을 맞춤. `--write`는 `data/game-data.json`을 갱신
 - `node tools/attack-timing.mjs` — 리그가 있는 유닛(오크·골렘·고블린·스켈레톤·마법사)의 공격 모션 점검. `data/game-data.json`의 `windup`(선딜, 초)과 공속이 리그 길이에 맞는지, 실제 전투 시뮬에서 모든 타격 전에 선딜 모션이 보이는지 검사(실패 시 종료 코드 1). 유닛의 `atk`/`rate`/`windup`을 바꾼 뒤 실행하세요.
+- `node tools/stamp-assets.mjs [--check]` — `index.html`의 스크립트·스타일에 내용 해시(`?v=`)를 붙여 브라우저/GitHub Pages 캐시가 새 스크립트와 옛 데이터를 섞어 쓰지 않게 함. 스크립트·스타일·데이터를 바꾼 뒤 배포 전에 실행하세요.
