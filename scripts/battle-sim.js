@@ -7,7 +7,7 @@
 //
 // The view reacts through `battle.listener`; every method is optional and is called inline, at the exact point
 // the rule fires, so the order of random draws never depends on whether a view is attached:
-//   hit(target, source, amount, dot)   hp was reduced        shieldAbsorb(target)       a barrier soaked a hit
+//   hit(target, source, amount, dot, em) hp was reduced (em = element multiplier: >1 weak, <1 resisted)       shieldAbsorb(target)       a barrier soaked a hit
 //   died(target)                       unit reached 0 hp     revived(target)            hp refilled instead of dying
 //   effect(kind, at)                   'heal' | 'burst' | 'shield' at at.x/at.y
 //   skill(kind, pc, unit)              'revive' | 'rage' | 'slimeBurst' | 'volley' | 'barrier'; pc is the bag piece or null,
@@ -79,7 +79,7 @@ window.createBattleSim = function createBattleSim(data) {
     on(b).skill?.(kind, pc, at);
   }
 
-  function hit(b, target, amount, source, dot = false) {
+  function hit(b, target, amount, source, dot = false, em = 1) {
     if (target.hp <= 0) return;
     if (target.trait === 'armor') amount *= .75;
     if (!dot && target.shield > 0) {
@@ -90,7 +90,7 @@ window.createBattleSim = function createBattleSim(data) {
       if (amount <= .01) return;
     }
     target.hp -= amount;
-    on(b).hit?.(target, source, amount, dot);
+    on(b).hit?.(target, source, amount, dot, em);
     if (source.team === 0) {
       b.stats.damage += amount;
       if (source.pid) pstat(b, source.pid).dmg += amount;
@@ -118,7 +118,7 @@ window.createBattleSim = function createBattleSim(data) {
   function impact(b, source, target, mult = 1) {
     if (target.hp <= 0) return;
     const em = elemMult(target, ELEM[source.aff] || []);
-    hit(b, target, source.atk * mult * em, source);
+    hit(b, target, source.atk * mult * em, source, false, em);
     if (em > 1 && source.team === 0) b.stats.weak = (b.stats.weak || 0) + 1;
     const a = source.aff;
     if (['fire', 'steam', 'blast'].includes(a)) {
