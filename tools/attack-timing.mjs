@@ -31,7 +31,7 @@ for(const type of Object.keys(data.units)){
   const d=data.units[type];if(d.material||!d.windup)continue;
   const rig=rigAttack(type),natW=rig.impact-rig.start,natR=rig.end-rig.impact;
   for(const side of ['ally','enemy']){
-    const s=side==='ally'?d:data.enemies[type];if(!s)continue;
+    const s=d;
     const cycle=1/s.rate,fit=Math.min(1,cycle/(d.windup+d.recovery)),w=d.windup*fit,rec=d.recovery*fit;
     // duel: one unit against a dummy that cannot die, starting out of range
     const melee=s.range<=60,gap=melee?160:s.range+120;

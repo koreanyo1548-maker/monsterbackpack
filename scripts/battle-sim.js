@@ -231,21 +231,15 @@ window.createBattleSim = function createBattleSim(data) {
 
   // ---- Battle setup: bag layout -> battlefield units ----
   const groupBonus = n => data.groupBonus[n >= 1 && n < 5 ? n - 1 : 4];
-  const eHp = w => Math.pow(scaling.enemyHpGrowth, w - 1) * data.tune[w - 1].hp;
-  const eAtk = w => Math.pow(scaling.enemyAtkGrowth, w - 1) * data.tune[w - 1].atk;
   const formation = n => { const t = Math.max(0, Math.min(1, (n - 6) / 40)); return {sx: 42 + 22 * t, gap: 40 + 32 * t}; };
   const neighbors = (i, c, n) => [i % c > 0 ? i - 1 : -1, i % c < c - 1 ? i + 1 : -1, i - c, i + c].filter(j => j >= 0 && j < n);
 
-  const enemyCount = w => scaling.enemyBaseCount + Math.floor(w * scaling.enemyCountPerWave);
-
-  // Enemy list for a wave: counts follow the weights in data.encounters, rounded by largest remainder.
+  // Enemy list for a wave: data.encounters[w-1] holds unit counts per type. Enemies are plain units from data.units; the
+  // balance tool tunes how many of them stand there, never their stats.
   function encounter(w) {
-    const wts = data.encounters[w - 1], en = enemyCount(w);
-    const keys = Object.keys(wts), sum = keys.reduce((a, k) => a + wts[k], 0);
-    const list = keys.map(k => ({type: k, count: Math.floor(wts[k] / sum * en), rem: (wts[k] / sum * en) % 1}));
-    let left = en - list.reduce((a, o) => a + o.count, 0);
-    list.slice().sort((a, b) => b.rem - a.rem).forEach(o => { if (left > 0) { o.count++; left--; } });
-    return {list: list.filter(o => o.count > 0), total: en, boss: data.bosses[w] || null};
+    const counts = data.encounters[w - 1], list = Object.keys(counts).map(k => ({type: k, count: counts[k]})).filter(o => o.count > 0);
+    const en = list.reduce((a, o) => a + o.count, 0);
+    return {list, total: en, boss: data.bosses[w] || null};
   }
 
   function createBattle(setup) {
@@ -272,16 +266,41 @@ window.createBattleSim = function createBattleSim(data) {
       }
     }
 
-    const boss = wave % 4 === 0, scale = eHp(wave), en = enemyCount(wave);
+    const boss = wave % 4 === 0, enc = encounter(wave), en = enc.total;
     const ecols = Math.min(7, Math.max(3, Math.ceil(Math.sqrt(en * 1.6)))), efront = mid - gap, esy = Math.min(sy, 32), enemies = [];
-    const order = encounter(wave).list.flatMap(o => Array(o.count).fill(o.type)).sort((a, b) => (ENEMY[a].range > 60) - (ENEMY[b].range > 60));
+    // Enemies stand in a grid (row 0 = front, same orientation as the bag) and get the same group bonus and aura rules as
+    // the player's pieces: connected same-type units form a group, aura sources buff their neighbours.
+    const order = enc.list.flatMap(o => Array(o.count).fill(o.type)).sort((a, b) => (unitDefs[a].range > 60) - (unitDefs[b].range > 60) || (a < b ? -1 : a > b));
+    const at = (cx, ry) => cx >= 0 && cx < ecols && ry >= 0 ? order[ry * ecols + cx] : undefined;
+    const bonus = order.map(() => ({hp: 1, atk: 1, rate: 1, add: {hp: 0, atk: 0, rate: 0}})), seen = new Set();
+    order.forEach((type, i) => {
+      if (seen.has(i)) return;
+      const comp = [i];
+      seen.add(i);
+      for (let k = 0; k < comp.length; k++) {
+        const cx = comp[k] % ecols, ry = Math.floor(comp[k] / ecols);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const j = (ry + dy) * ecols + cx + dx;
+          if (at(cx + dx, ry + dy) === type && !seen.has(j)) { seen.add(j); comp.push(j); }
+        }
+      }
+      const gb = groupBonus(comp.length);
+      for (const j of comp) { bonus[j].hp *= gb.hp; bonus[j].atk *= gb.atk; }
+    });
+    order.forEach((type, i) => {
+      const cx = i % ecols, ry = Math.floor(i / ecols);
+      for (const a of data.auras[type] || []) {
+        const j = (ry + a.d[1]) * ecols + cx + a.d[0];
+        if (at(cx + a.d[0], ry + a.d[1]) !== undefined) bonus[j].add[a.stat] += a.v;
+      }
+    });
     for (let i = 0; i < en; i++) {
-      const type = order[i], E = ENEMY[type], row = Math.floor(i / ecols), inRow = Math.min(ecols, en - row * ecols), col = i % ecols;
-      enemies.push(unit(type, 1, W / 2 + (col - (inRow - 1) / 2) * sx * .95, efront - row * esy, {hp: E.hp * scale, atk: E.atk * eAtk(wave), rate: E.rate, range: E.range, speed: E.speed}));
+      const type = order[i], d = unitDefs[type], bn = bonus[i], row = Math.floor(i / ecols), inRow = Math.min(ecols, en - row * ecols), col = i % ecols, cap = data.run.auraCap;
+      enemies.push(unit(type, 1, W / 2 + (col - (inRow - 1) / 2) * sx * .95, efront - row * esy, {hp: d.hp * bn.hp * (1 + Math.min(cap, bn.add.hp)), atk: d.atk * bn.atk * (1 + Math.min(cap, bn.add.atk)), rate: d.rate * (1 + Math.min(cap, bn.add.rate))}));
     }
     if (boss) {
       const B = data.bosses[wave], BS = scaling.boss;
-      enemies.push(unit(B.type, 1, W / 2, Math.max(46, efront - Math.ceil(en / ecols) * esy - 16), {hp: BS.hp * scale, atk: BS.atk * Math.pow(BS.atkGrowth, wave) * data.tune[wave - 1].atk, rate: BS.rate, range: BS.range, speed: BS.speed, boss: true, trait: B.trait}));
+      enemies.push(unit(B.type, 1, W / 2, Math.max(46, efront - Math.ceil(en / ecols) * esy - 16), {hp: B.hp, atk: B.atk, rate: BS.rate, range: BS.range, speed: BS.speed, boss: true, trait: B.trait}));
     }
 
     const pieceList = [], adj = new Map();
@@ -398,5 +417,5 @@ window.createBattleSim = function createBattleSim(data) {
     }
   }
 
-  return {W, H, seed, unit, createBattle, step, encounter, eHp, eAtk, groupBonus, elemMult, isMelee, reachOf, bodySize, windupOf, recoveryOf};
+  return {W, H, seed, unit, createBattle, step, encounter, groupBonus, elemMult, isMelee, reachOf, bodySize, windupOf, recoveryOf};
 };

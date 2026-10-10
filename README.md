@@ -33,6 +33,6 @@ tools/                밸런스·회귀 검증과 스티커 빌드 스크립트
 - `node tools/sim-node.mjs [--wave 3] [--seed 1]` — 브라우저 없이 Node에서 시뮬레이션을 돌려 시드 재현성을 확인 (이식 시 기준 출력으로 사용)
 - `node tools/prepare-regression.mjs [--steps 400] [--seed 1] [--root DIR] [--out f.json]` — 실제 UI 함수로 무작위 플레이(구매·이동·변이·합성·판매·전투·보상)를 하며 매 단계 상태를 기록. 준비 화면 규칙을 건드리기 전후 출력을 비교하세요(마지막 `COV` 줄은 호출 횟수라 비교에서 제외).
 - `node tools/rules-node.mjs [--seed 1]` — 브라우저 없이 Node에서 run-rules를 돌려 시드 재현성을 확인
-- `node tools/balance.mjs [--baseline] [--write]` — 웨이브별 `tune`을 맞춤. `--write`는 `data/game-data.json`을 갱신
+- `node tools/balance.mjs [--baseline] [--write]` — 웨이브별 적 마릿수(`encounters`)를 맞춤. 적 능력치는 건드리지 않고 `encounterMix`(구성 비율)대로 유닛 수만 늘리고 줄임. `--write`는 `data/game-data.json`을 갱신
 - `node tools/attack-timing.mjs` — 리그가 있는 유닛(오크·골렘·고블린·스켈레톤·마법사)의 공격 모션 점검. `data/game-data.json`의 `windup`(선딜, 초)과 공속이 리그 길이에 맞는지, 실제 전투 시뮬에서 모든 타격 전에 선딜 모션이 보이는지 검사(실패 시 종료 코드 1). 유닛의 `atk`/`rate`/`windup`을 바꾼 뒤 실행하세요.
 - `node tools/stamp-assets.mjs [--check]` — `index.html`의 스크립트·스타일에 내용 해시(`?v=`)를 붙여 브라우저/GitHub Pages 캐시가 새 스크립트와 옛 데이터를 섞어 쓰지 않게 함. 스크립트·스타일·데이터를 바꾼 뒤 배포 전에 실행하세요.

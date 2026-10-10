@@ -83,33 +83,33 @@
  },
  "groupBonus": [{"hp":1,"atk":1},{"hp":1.05,"atk":1},{"hp":1.1,"atk":1.1},{"hp":1.15,"atk":1.15},{"hp":1.2,"atk":1.2}],
  "enemies": {
-  "skeleton": {"name":"스켈레톤","hp":64,"atk":6.97,"rate":0.69,"range":22,"speed":33,"weak":"fire","res":"poison"},
-  "orc": {"name":"오크","hp":130,"atk":12,"rate":0.55,"range":22,"speed":25,"weak":"poison","res":"fire"},
-  "slime": {"name":"슬라임","hp":70,"atk":6,"rate":1,"range":22,"speed":36,"weak":"fire","res":"water"},
-  "goblin": {"name":"고블린 궁수","hp":48,"atk":10.9,"rate":0.59,"range":140,"speed":33,"weak":"water","res":null},
-  "golem": {"name":"골렘","hp":240,"atk":11,"rate":0.45,"range":27,"speed":23,"weak":"water","res":"poison"},
-  "mage": {"name":"마법사","hp":55,"atk":14,"rate":0.4,"range":125,"speed":30,"weak":"fire","res":null}
+  "skeleton": {"name":"스켈레톤","weak":"fire","res":"poison"},
+  "orc": {"name":"오크","weak":"poison","res":"fire"},
+  "slime": {"name":"슬라임","weak":"fire","res":"water"},
+  "goblin": {"name":"고블린 궁수","weak":"water","res":null},
+  "golem": {"name":"골렘","weak":"water","res":"poison"},
+  "mage": {"name":"마법사","weak":"fire","res":null}
  },
  "encounters": [
   {"skeleton":1},
-  {"skeleton":7,"slime":3},
-  {"skeleton":55,"slime":25,"goblin":20},
-  {"skeleton":50,"goblin":25,"slime":25},
-  {"slime":25,"goblin":25,"orc":25,"skeleton":25},
-  {"skeleton":35,"orc":25,"mage":20,"goblin":20},
-  {"slime":30,"orc":30,"goblin":20,"mage":20},
-  {"skeleton":40,"goblin":30,"mage":30},
-  {"golem":20,"orc":25,"slime":30,"goblin":25},
-  {"golem":25,"mage":25,"orc":25,"skeleton":25},
-  {"golem":25,"orc":25,"mage":25,"goblin":25},
-  {"golem":20,"orc":30,"mage":25,"skeleton":25}
+  {"skeleton":2,"slime":2},
+  {"skeleton":5,"slime":2,"goblin":2},
+  {"skeleton":1,"goblin":1,"slime":3},
+  {"slime":5,"goblin":3,"orc":2,"skeleton":2},
+  {"skeleton":4,"orc":3,"mage":3,"goblin":2},
+  {"slime":5,"orc":3,"goblin":2,"mage":2},
+  {"skeleton":6,"goblin":4,"mage":4},
+  {"golem":4,"orc":5,"slime":6,"goblin":4},
+  {"golem":4,"mage":4,"orc":3,"skeleton":3},
+  {"golem":4,"orc":3,"mage":3,"goblin":3,"slime":1},
+  {"golem":2,"orc":3,"mage":3,"skeleton":3,"slime":1}
  ],
  "bosses": {
-  "4": {"type":"orc","name":"오크 대장","trait":"rage","desc":"체력 50% 이하에서 공격력 ×1.5"},
-  "8": {"type":"skeleton","name":"해골왕","trait":"revive","desc":"쓰러져도 한 번 부활(체력 40%)"},
-  "12": {"type":"golem","name":"거신 골렘","trait":"armor","desc":"받는 피해 25% 감소"}
+  "4": {"type":"orc","name":"오크 대장","trait":"rage","desc":"체력 50% 이하에서 공격력 ×1.5","hp":520,"atk":24},
+  "8": {"type":"skeleton","name":"해골왕","trait":"revive","desc":"쓰러져도 한 번 부활(체력 40%)","hp":1100,"atk":38},
+  "12": {"type":"golem","name":"거신 골렘","trait":"armor","desc":"받는 피해 25% 감소","hp":1800,"atk":52}
  },
- "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":2,"enemyCountPerWave":1,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
+ "scaling": {"boss":{"rate":0.5,"range":34,"speed":21}},
  "run": {
   "startGold": 5,
   "defaultBag": "basic",
@@ -127,18 +127,18 @@
   "auraCap": 0.6
  },
  "field": {"width":440,"height":540},
- "tune": [
-  {"hp":1.4,"atk":1.183},
-  {"hp":2.162,"atk":1.471},
-  {"hp":3.7,"atk":1.924},
-  {"hp":0.7,"atk":0.836},
-  {"hp":2.811,"atk":1.677},
-  {"hp":2.659,"atk":1.631},
-  {"hp":1.766,"atk":1.329},
-  {"hp":1.505,"atk":1.227},
-  {"hp":1.908,"atk":1.381},
-  {"hp":1.21,"atk":1.1},
-  {"hp":0.991,"atk":0.996},
-  {"hp":0.652,"atk":0.807}
+ "encounterMix": [
+  {"skeleton":1},
+  {"skeleton":7,"slime":3},
+  {"skeleton":55,"slime":25,"goblin":20},
+  {"skeleton":50,"goblin":25,"slime":25},
+  {"slime":25,"goblin":25,"orc":25,"skeleton":25},
+  {"skeleton":35,"orc":25,"mage":20,"goblin":20},
+  {"slime":30,"orc":30,"goblin":20,"mage":20},
+  {"skeleton":40,"goblin":30,"mage":30},
+  {"golem":20,"orc":25,"slime":30,"goblin":25},
+  {"golem":25,"mage":25,"orc":25,"skeleton":25},
+  {"golem":25,"orc":25,"mage":25,"goblin":25},
+  {"golem":20,"orc":30,"mage":25,"skeleton":25}
  ]
 }
