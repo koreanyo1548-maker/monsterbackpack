@@ -234,12 +234,12 @@ window.createBattleSim = function createBattleSim(data) {
   const formation = n => { const t = Math.max(0, Math.min(1, (n - 6) / 40)); return {sx: 42 + 22 * t, gap: 40 + 32 * t}; };
   const neighbors = (i, c, n) => [i % c > 0 ? i - 1 : -1, i % c < c - 1 ? i + 1 : -1, i - c, i + c].filter(j => j >= 0 && j < n);
 
-  // Enemy list for a wave: data.encounters[w-1] holds unit counts per type. Enemies are plain units from data.units; the
+  // Enemy list for a wave: data.encounters[w-1] holds piece counts per type (a slime piece is two slimes, like the player's). Enemies are plain units from data.units; the
   // balance tool tunes how many of them stand there, never their stats.
   function encounter(w) {
-    const counts = data.encounters[w - 1], list = Object.keys(counts).map(k => ({type: k, count: counts[k]})).filter(o => o.count > 0);
-    const en = list.reduce((a, o) => a + o.count, 0);
-    return {list, total: en, boss: data.bosses[w] || null};
+    const counts = data.encounters[w - 1], list = Object.keys(counts).map(k => ({type: k, count: counts[k], units: counts[k] * unitDefs[k].count})).filter(o => o.count > 0);
+    const en = list.reduce((a, o) => a + o.count, 0), units = list.reduce((a, o) => a + o.units, 0);
+    return {list, pieces: en, total: units, boss: data.bosses[w] || null};
   }
 
   function createBattle(setup) {
@@ -266,7 +266,7 @@ window.createBattleSim = function createBattleSim(data) {
       }
     }
 
-    const boss = wave % 4 === 0, enc = encounter(wave), en = enc.total;
+    const boss = wave % 4 === 0, enc = encounter(wave), en = enc.pieces;
     const ecols = Math.min(7, Math.max(3, Math.ceil(Math.sqrt(en * 1.6)))), efront = mid - gap, esy = Math.min(sy, 32), enemies = [];
     // Enemies stand in a grid (row 0 = front, same orientation as the bag) and get the same group bonus and aura rules as
     // the player's pieces: connected same-type units form a group, aura sources buff their neighbours.
@@ -296,7 +296,11 @@ window.createBattleSim = function createBattleSim(data) {
     });
     for (let i = 0; i < en; i++) {
       const type = order[i], d = unitDefs[type], bn = bonus[i], row = Math.floor(i / ecols), inRow = Math.min(ecols, en - row * ecols), col = i % ecols, cap = data.run.auraCap;
-      enemies.push(unit(type, 1, W / 2 + (col - (inRow - 1) / 2) * sx * .95, efront - row * esy, {hp: d.hp * bn.hp * (1 + Math.min(cap, bn.add.hp)), atk: d.atk * bn.atk * (1 + Math.min(cap, bn.add.atk)), rate: d.rate * (1 + Math.min(cap, bn.add.rate))}));
+      const px = W / 2 + (col - (inRow - 1) / 2) * sx * .95, py = efront - row * esy;
+      for (let j = 0; j < d.count; j++) {
+        const ox = d.count > 1 ? (j - (d.count - 1) / 2) * sx * .42 : 0, oy = d.count > 1 ? (j % 2 ? -1 : 1) * esy * .12 : 0;
+        enemies.push(unit(type, 1, px + ox, py + oy, {hp: d.hp * bn.hp * (1 + Math.min(cap, bn.add.hp)), atk: d.atk * bn.atk * (1 + Math.min(cap, bn.add.atk)), rate: d.rate * (1 + Math.min(cap, bn.add.rate))}));
+      }
     }
     if (boss) {
       const B = data.bosses[wave], BS = scaling.boss;

@@ -93,17 +93,17 @@ window.GAME_DATA = {
  },
  "encounters": [
   {"skeleton":1},
-  {"skeleton":2,"slime":2},
-  {"skeleton":5,"slime":2,"goblin":2},
-  {"skeleton":1,"goblin":1,"slime":3},
-  {"slime":5,"goblin":3,"orc":2,"skeleton":2},
+  {"skeleton":2,"slime":1},
+  {"skeleton":4,"slime":2,"goblin":2},
+  {"skeleton":1,"goblin":1},
+  {"slime":3,"goblin":3,"orc":2,"skeleton":2},
   {"skeleton":4,"orc":3,"mage":3,"goblin":2},
-  {"slime":5,"orc":3,"goblin":2,"mage":2},
+  {"slime":3,"orc":3,"goblin":2,"mage":2},
   {"skeleton":6,"goblin":4,"mage":4},
-  {"golem":4,"orc":5,"slime":6,"goblin":4},
+  {"golem":3,"orc":4,"slime":7,"goblin":4},
   {"golem":4,"mage":4,"orc":3,"skeleton":3},
-  {"golem":4,"orc":3,"mage":3,"goblin":3,"slime":1},
-  {"golem":2,"orc":3,"mage":3,"skeleton":3,"slime":1}
+  {"golem":3,"orc":3,"mage":3,"goblin":3,"slime":2},
+  {"golem":2,"orc":3,"mage":3,"skeleton":3,"slime":2}
  ],
  "bosses": {
   "4": {"type":"orc","name":"오크 대장","trait":"rage","desc":"체력 50% 이하에서 공격력 ×1.5","hp":520,"atk":24},
