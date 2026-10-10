@@ -10,7 +10,9 @@
 //   hit(target, source, amount, dot)   hp was reduced        shieldAbsorb(target)       a barrier soaked a hit
 //   died(target)                       unit reached 0 hp     revived(target)            hp refilled instead of dying
 //   effect(kind, at)                   'heal' | 'burst' | 'shield' at at.x/at.y
-//   skill(kind, pc)                    'revive' | 'rage' | 'slimeBurst' | 'volley' | 'barrier'; pc is the bag piece or null
+//   skill(kind, pc, unit)              'revive' | 'rage' | 'slimeBurst' | 'volley' | 'barrier'; pc is the bag piece or null,
+//                                      unit is the unit the skill belongs to (where the view draws it)
+//   status(target, kind, source)       a hit applied 'burn' | 'slow' | 'poison' to target
 //   impact(source, target)             a melee/projectile hit landed
 //   attack(unit, target, nx, ny)       a unit started an attack (nx/ny = unit direction to the target)
 //   moved(unit, dt)                    a unit walked this tick  projectile(p) / projectileMoved(p)
@@ -61,14 +63,14 @@ window.createBattleSim = function createBattleSim(data) {
 
   const pstat = (b, pid) => b.stats.by[pid] ??= {dmg: 0, kills: 0, skills: 0};
 
-  function chain(b, pc, kind, ids = []) {
+  function chain(b, pc, kind, ids = [], at = null) {
     pstat(b, pc.pid).skills++;
     pc.pulse = b.time;
     for (const id of ids) {
       const o = b.pieceList.find(x => x.pid === id);
       if (o) o.pulse = b.time;
     }
-    on(b).skill?.(kind, pc);
+    on(b).skill?.(kind, pc, at);
   }
 
   function hit(b, target, amount, source, dot = false) {
@@ -94,8 +96,8 @@ window.createBattleSim = function createBattleSim(data) {
       target.hp = target.maxHp * rv;
       on(b).revived?.(target);
       const rp = target.pid && b.pieceList.find(x => x.pid === target.pid);
-      if (rp) chain(b, rp, 'revive');
-      else on(b).skill?.('revive', null);
+      if (rp) chain(b, rp, 'revive', [], target);
+      else on(b).skill?.('revive', null, target);
       return;
     }
     target.hp = 0;
@@ -117,13 +119,18 @@ window.createBattleSim = function createBattleSim(data) {
       target.burn = 3;
       target.burnDps = Math.max(target.burnDps, source.atk * .2);
       target.dotSource = source;
+      on(b).status?.(target, 'burn', source);
     }
-    if (['water', 'steam', 'spring'].includes(a)) target.slow = 2;
+    if (['water', 'steam', 'spring'].includes(a)) {
+      target.slow = 2;
+      on(b).status?.(target, 'slow', source);
+    }
     if (['poison', 'plague', 'blast'].includes(a)) {
       target.poison = 4;
       target.stacks = Math.min(3, target.stacks + 1);
       target.poisonDps = Math.max(target.poisonDps, source.atk * .1);
       target.dotSource = source;
+      on(b).status?.(target, 'poison', source);
     }
     on(b).impact?.(source, target);
     if (source.type === 'mage' || source.type === 'orc' || source.boss)
@@ -179,7 +186,7 @@ window.createBattleSim = function createBattleSim(data) {
       on(b).effect?.('burst', dead);
       if (n && pc && b.time - (pc.lastBurst || -9) > .8) {
         pc.lastBurst = b.time;
-        chain(b, pc, 'slimeBurst');
+        chain(b, pc, 'slimeBurst', [], dead);
       }
     }
     for (const g of b.pieceList) {
@@ -190,7 +197,7 @@ window.createBattleSim = function createBattleSim(data) {
       if (!foes.length) continue;
       g.icd = 3;
       for (const t of foes) launchProjectile(b, gob, t, 'arrow', 1.2);
-      chain(b, g, 'volley', [dead.pid]);
+      chain(b, g, 'volley', [dead.pid], gob);
     }
   }
 
@@ -198,7 +205,8 @@ window.createBattleSim = function createBattleSim(data) {
   function skillTick(b, dt) {
     for (const pc of b.pieceList) {
       if (pc.icd > 0) pc.icd = Math.max(0, pc.icd - dt);
-      if (pc.type !== 'mage' || !b.units.some(u => u.pid === pc.pid && u.hp > 0)) continue;
+      const caster = pc.type === 'mage' ? b.units.find(u => u.pid === pc.pid && u.hp > 0) : null;
+      if (!caster) continue;
       pc.skillCd -= dt;
       if (pc.skillCd > 0) continue;
       pc.skillCd = 8;
@@ -211,7 +219,7 @@ window.createBattleSim = function createBattleSim(data) {
           on(b).effect?.('shield', u);
           n++;
         }
-      if (n) chain(b, pc, 'barrier', [...ids]);
+      if (n) chain(b, pc, 'barrier', [...ids], caster);
     }
   }
 
@@ -305,7 +313,7 @@ window.createBattleSim = function createBattleSim(data) {
         u.raged = true;
         u.atk *= 1.5;
         L.effect?.('burst', u);
-        L.skill?.('rage', null);
+        L.skill?.('rage', null, u);
       }
       if (u.shield > 0) {
         u.shieldT -= dt;
