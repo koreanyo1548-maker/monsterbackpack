@@ -33,9 +33,9 @@ const log=await page.evaluate(([steps,seed])=>{
     if(modalCallback&&rnd()<.7){const cb=modalCallback;cb();}else closeModal();
   };
   const occupied=()=>state.board.map((p,i)=>p?i:-1).filter(i=>i>=0);
-  const bags=['lord','alchemist','smith'],cov={};
+  const bags=['basic','lord','alchemist','smith'],cov={};
   for(const f of ['applyMutation','applyFusion','offerMutation','offerFusion','claimReward','nextRound','finishBattle','expand','buy','reroll','sell','stow','rotate','unbenchAt','stowTo','togglePin','bossReward']){const orig=window[f];window[f]=function(...a){cov[f]=(cov[f]||0)+1;return orig.apply(this,a);};}
-  newRun(bags[seed%3]);settle();snap('newRun');
+  newRun(bags[seed%4]);settle();snap('newRun');
   // Reseed the game's Math.random at every step: cosmetic effects (particles, shake) draw from the same stream as the
   // shop and mutation rolls, and a change in how many particles a fight spawns must not shift later rolls.
   const mk=n=>{let a=(seed*100003+n*7919)>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};};
