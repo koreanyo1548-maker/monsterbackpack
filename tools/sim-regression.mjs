@@ -28,7 +28,7 @@ const res=await page.evaluate(([seeds,hard,headless])=>{
   for(let w=1;w<=12;w++)for(let seed=1;seed<=seeds;seed++){
     const real=Math.random;Math.random=BAL.rng(seed*7919+w);window.__TEST__=true;
     const oP=powerOf,f=Math.min(1,w/8);powerOf=()=>({hp:1+.087*f,atk:1+.09*f,rate:1,tags:[]});
-    TUNE[w-1]={hp:TUNE[w-1].hp*hard,atk:TUNE[w-1].atk};BAL.setup(w);battle=buildBattle();mode='battle';battle.intro=null;
+    BAL.setup(w);battle=buildBattle();for(const u of battle.units)if(u.team===1){u.hp*=hard;u.maxHp*=hard;}mode='battle';battle.intro=null;
     let t=0,n=0;if(headless)battle.listener=null;
     while(!battle.end&&t<61){if(headless)Sim.step(battle,.025);else simulate(.025);t+=.025;n++;}
     const units=battle.units.map(u=>[u.type,u.team,Math.round(u.hp*1000),Math.round(u.x*100),Math.round(u.y*100)].join(':')).join('|');

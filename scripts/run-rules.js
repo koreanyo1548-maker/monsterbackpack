@@ -395,10 +395,10 @@ window.createRunRules = function createRunRules(data) {
   }
   function foeAdvice(st, enc) {
     const am = armyElems(st), score = {fire: 0, water: 0, poison: 0};
-    for (const o of enc.list) if (ENEMY[o.type].weak) score[ENEMY[o.type].weak] += o.count;
+    for (const o of enc.list) if (ENEMY[o.type].weak) score[ENEMY[o.type].weak] += o.units;
     const best = Object.keys(score).sort((a, b) => score[b] - score[a])[0];
-    const hits = enc.list.filter(o => am[ENEMY[o.type].weak] > 0).reduce((a, o) => a + o.count, 0);
-    const bad = enc.list.filter(o => ENEMY[o.type].res && am[ENEMY[o.type].res] > 0 && !(am[ENEMY[o.type].weak] > 0)).reduce((a, o) => a + o.count, 0);
+    const hits = enc.list.filter(o => am[ENEMY[o.type].weak] > 0).reduce((a, o) => a + o.units, 0);
+    const bad = enc.list.filter(o => ENEMY[o.type].res && am[ENEMY[o.type].res] > 0 && !(am[ENEMY[o.type].weak] > 0)).reduce((a, o) => a + o.units, 0);
     return {best, bestN: score[best], hits, bad, total: enc.total};
   }
 
