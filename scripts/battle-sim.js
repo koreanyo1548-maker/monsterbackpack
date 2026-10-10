@@ -41,7 +41,7 @@ window.createBattleSim = function createBattleSim(data) {
 
   function unit(type, team, x, y, opts = {}) {
     const d = unitDefs[type] || {hp: type === 'orc' ? 155 : 64, atk: type === 'orc' ? 15 : 7, rate: type === 'orc' ? .55 : .8, range: 22, speed: type === 'orc' ? 25 : 33};
-    const u = {id: unitId++, type, team, x, y, hp: d.hp, maxHp: d.hp, atk: d.atk, rate: d.rate, range: d.range, speed: d.speed, aff: 'none', cd: rand() * .6, flash: 0, swing: 0, dir: team === 0 ? 1 : -1, burn: 0, burnDps: 0, poison: 0, poisonDps: 0, stacks: 0, slow: 0, healClock: 0, moving: false, deadFor: 0, boss: false, windup: d.windup || 0, ...opts};
+    const u = {id: unitId++, type, team, x, y, hp: d.hp, maxHp: d.hp, atk: d.atk, rate: d.rate, range: d.range, speed: d.speed, aff: 'none', cd: rand() * .6, flash: 0, swing: 0, dir: team === 0 ? 1 : -1, burn: 0, burnDps: 0, poison: 0, poisonDps: 0, stacks: 0, slow: 0, healClock: 0, moving: false, deadFor: 0, boss: false, windup: d.windup || 0, recovery: d.recovery || 0, ...opts};
     u.maxHp = u.hp;
     return u;
   }
@@ -61,9 +61,12 @@ window.createBattleSim = function createBattleSim(data) {
   // Melee reach is body-to-body: units stop when their bodies touch instead of stacking inside each other.
   const reachOf = (u, v) => isMelee(u) ? rad(u) + rad(v) + (u.range - 22) * .5 + 3 : u.range;
 
-  // Units with a rigged attack animation need their wind-up to be seen before every hit. `windup` (seconds, from the
-  // data) is the natural length of that wind-up; it is shortened when the attack cycle is too fast to fit it.
-  const windupOf = u => u.windup > 0 ? Math.min(u.windup, .5 / u.rate) : 0;
+  // Units with a rigged attack animation need their wind-up and follow-through to play at 1x. `windup` and `recovery`
+  // (seconds, from the data) are the rig's natural lengths; both shrink together only when a faster attack rate
+  // (buffs) leaves the cycle too short to hold them.
+  const fitOf = u => u.windup > 0 ? Math.min(1, 1 / u.rate / (u.windup + (u.recovery || 0))) : 1;
+  const windupOf = u => u.windup > 0 ? u.windup * fitOf(u) : 0;
+  const recoveryOf = u => (u.recovery || 0) * fitOf(u);
   const pstat = (b, pid) => b.stats.by[pid] ??= {dmg: 0, kills: 0, skills: 0};
 
   function chain(b, pc, kind, ids = [], at = null) {
@@ -393,5 +396,5 @@ window.createBattleSim = function createBattleSim(data) {
     }
   }
 
-  return {W, H, seed, unit, createBattle, step, encounter, eHp, eAtk, groupBonus, elemMult, isMelee, reachOf, bodySize, windupOf};
+  return {W, H, seed, unit, createBattle, step, encounter, eHp, eAtk, groupBonus, elemMult, isMelee, reachOf, bodySize, windupOf, recoveryOf};
 };

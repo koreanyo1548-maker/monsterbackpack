@@ -36,7 +36,7 @@ function fxPost(dt){const b=battle;for(const u of b.units){if(u.hp<=0)continue;u
 function simulate(dt){if(!battle||battle.end)return;fxPre(dt);Sim.step(battle,dt);fxPost(dt);}
 // Sticker animation samples the approved pose curve; combat cooldown and damage stay in simulate().
 // Follow-through length: the rig's natural recovery, shortened only when the attack cycle is too fast to fit it.
-function recoveryOf(u){const e=stickerRigs[u.type];if(!e)return .26;const a=e.data.attack;return Math.max(.15,Math.min(a.end-a.impact,.9/u.rate-(Sim.windupOf(u)||a.anticipation)));}
+function recoveryOf(u){return Sim.recoveryOf(u)||.26;}
 function stickerAttackTime(u){
  const entry=stickerRigs[u.type];if(!entry)return null;
  const a=entry.data.attack;
