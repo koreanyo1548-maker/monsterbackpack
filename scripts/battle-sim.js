@@ -363,7 +363,13 @@ window.createBattleSim = function createBattleSim(data) {
       if (!nearest) continue;
       const dist = Math.hypot(nearest.x - u.x, nearest.y - u.y) || .01, reach = reachOf(u, nearest);
       const dx = nearest.x - u.x, dy = nearest.y - u.y;
-      u.dir = dx >= 0 ? 1 : -1;
+      // Facing is display-only. Before the blow it follows the target with a dead zone (a target straight above or below
+      // must not make the sprite flip every tick), so the unit always faces the side it is about to hit. After the blow the
+      // facing is held through the follow-through, so the swing does not turn around mid-motion; only a target that ends up
+      // clearly behind turns the unit.
+      const want = dx > 8 ? 1 : dx < -8 ? -1 : u.dir;
+      if (b.time < (u.faceUntil || 0)) { if (Math.abs(dx) > 40) u.dir = want; }
+      else u.dir = want;
       // A unit that has arrived stands still: float noise (dist a hair above reach) must not count as walking,
       // otherwise it never shows its wind-up pose.
       const stride = Math.min(dist - reach, u.speed * dt);
@@ -379,6 +385,7 @@ window.createBattleSim = function createBattleSim(data) {
       u.cd -= dt * (u.slow > 0 ? .75 : 1);
       if (dist <= reach + 4 && u.cd <= 0) {
         u.cd = 1 / u.rate;
+        u.faceUntil = b.time + recoveryOf(u);
         L.attack?.(u, nearest, dx / dist, dy / dist);
         if (u.range > 60) launchProjectile(b, u, nearest, u.type === 'goblin' ? 'arrow' : 'magic');
         else impact(b, u, nearest);
