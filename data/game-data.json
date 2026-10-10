@@ -2,14 +2,14 @@
  "_doc": "Game tables shared by the web build, tools/balance.mjs and any future port. Edit here, then run: node tools/build-data.mjs (regenerates data/game-data.js).",
  "units": {
   "slime": {"name":"슬라임","asset":"slime","cost":3,"hp":100,"atk":10,"rate":1,"range":22,"speed":38,"count":2,"role":"물량 · 근접"},
-  "goblin": {"name":"고블린 궁수","asset":"goblin","cost":4,"hp":70,"atk":15,"rate":0.8,"range":145,"speed":35,"count":1,"role":"후방 · 원거리"},
-  "golem": {"name":"골렘","asset":"golem","cost":6,"hp":400,"atk":25,"rate":0.5,"range":27,"speed":25,"count":1,"role":"전열 · 탱커"},
-  "mage": {"name":"마법사","asset":"mage","cost":5,"hp":80,"atk":35,"rate":0.4,"range":132,"speed":32,"count":1,"role":"후방 · 광역"},
+  "goblin": {"name":"고블린 궁수","asset":"goblin","cost":4,"hp":70,"atk":20.4,"rate":0.59,"range":145,"speed":35,"count":1,"role":"후방 · 원거리","windup":0.84,"recovery":0.84},
+  "golem": {"name":"골렘","asset":"golem","cost":6,"hp":400,"atk":25,"rate":0.5,"range":27,"speed":25,"count":1,"role":"전열 · 탱커","windup":1.08,"recovery":0.64},
+  "mage": {"name":"마법사","asset":"mage","cost":5,"hp":80,"atk":35,"rate":0.4,"range":132,"speed":32,"count":1,"role":"후방 · 광역","windup":0.8,"recovery":0.68},
   "fire": {"name":"불꽃 정수","asset":"fire","cost":4,"material":true},
   "water": {"name":"물의 정수","asset":"water","cost":4,"material":true},
   "poison": {"name":"독버섯","asset":"poison","cost":4,"material":true},
-  "skeleton": {"name":"스켈레톤","asset":"skeleton","cost":4,"hp":70,"atk":18,"rate":1,"range":22,"speed":38,"count":1,"role":"전열 · 근접 딜러"},
-  "orc": {"name":"오크 전사","asset":"orc","cost":7,"hp":260,"atk":22,"rate":0.6,"range":24,"speed":30,"count":1,"role":"전열 · 광역 근접"},
+  "skeleton": {"name":"스켈레톤","asset":"skeleton","cost":4,"hp":70,"atk":26.1,"rate":0.69,"range":22,"speed":38,"count":1,"role":"전열 · 근접 딜러","windup":0.76,"recovery":0.68},
+  "orc": {"name":"오크 전사","asset":"orc","cost":7,"hp":260,"atk":22,"rate":0.6,"range":24,"speed":30,"count":1,"role":"전열 · 광역 근접","windup":0.6,"recovery":0.72},
   "life": {"name":"생명 정수","asset":"water","cost":4,"material":true},
   "steamEss": {"name":"증기 정수","asset":"water","cost":8,"material":true,"gives":"steam","fx":"hue-rotate(-20deg) saturate(.6) brightness(1.35)"},
   "plagueEss": {"name":"역병 정수","asset":"poison","cost":8,"material":true,"gives":"plague","fx":"hue-rotate(225deg) saturate(1.15)"},
@@ -46,8 +46,8 @@
    "open": [".....#",".....#",".....#",".....#",".....#","######"],
    "kinds": ["......","......","..bb..","..bb..","......","......"],
    "steps": [[[0,5],[1,5],[2,5],[3,5],[4,5]],[[5,0],[5,1],[5,2],[5,3],[5,4],[5,5]]],
-   "start": [["slime",0,2],["slime",1,2],["goblin",2,3]],
-   "shop": ["slime","fire","golem"],
+   "start": [["slime",2,2]],
+   "shop": ["slime","skeleton","goblin"],
    "bench": ["any","any","any"]
   },
   "alchemist": {
@@ -73,17 +73,17 @@
  },
  "groupBonus": [{"hp":1,"atk":1},{"hp":1.05,"atk":1},{"hp":1.1,"atk":1.1},{"hp":1.15,"atk":1.15},{"hp":1.2,"atk":1.2}],
  "enemies": {
-  "skeleton": {"name":"스켈레톤","hp":64,"atk":6,"rate":0.8,"range":22,"speed":33,"weak":"fire","res":"poison"},
+  "skeleton": {"name":"스켈레톤","hp":64,"atk":6.97,"rate":0.69,"range":22,"speed":33,"weak":"fire","res":"poison"},
   "orc": {"name":"오크","hp":130,"atk":12,"rate":0.55,"range":22,"speed":25,"weak":"poison","res":"fire"},
   "slime": {"name":"슬라임","hp":70,"atk":6,"rate":1,"range":22,"speed":36,"weak":"fire","res":"water"},
-  "goblin": {"name":"고블린 궁수","hp":48,"atk":8,"rate":0.8,"range":140,"speed":33,"weak":"water","res":null},
+  "goblin": {"name":"고블린 궁수","hp":48,"atk":10.9,"rate":0.59,"range":140,"speed":33,"weak":"water","res":null},
   "golem": {"name":"골렘","hp":240,"atk":11,"rate":0.45,"range":27,"speed":23,"weak":"water","res":"poison"},
   "mage": {"name":"마법사","hp":55,"atk":14,"rate":0.4,"range":125,"speed":30,"weak":"fire","res":null}
  },
  "encounters": [
   {"skeleton":1},
   {"skeleton":7,"slime":3},
-  {"skeleton":55,"slime":25,"orc":20},
+  {"skeleton":55,"slime":25,"goblin":20},
   {"skeleton":50,"goblin":25,"slime":25},
   {"slime":25,"goblin":25,"orc":25,"skeleton":25},
   {"skeleton":35,"orc":25,"mage":20,"goblin":20},
@@ -99,9 +99,10 @@
   "8": {"type":"skeleton","name":"해골왕","trait":"revive","desc":"쓰러져도 한 번 부활(체력 40%)"},
   "12": {"type":"golem","name":"거신 골렘","trait":"armor","desc":"받는 피해 25% 감소"}
  },
- "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":5,"enemyCountPerWave":0.9,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
+ "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":2,"enemyCountPerWave":1,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
  "run": {
   "startGold": 5,
+  "defaultBag": "lord",
   "finalWave": 12,
   "bossEvery": 4,
   "rerollBase": 2,
@@ -117,17 +118,17 @@
  },
  "field": {"width":440,"height":540},
  "tune": [
-  {"hp":1.834,"atk":1.354},
-  {"hp":2.674,"atk":1.635},
-  {"hp":2.674,"atk":1.635},
-  {"hp":1.389,"atk":1.178},
-  {"hp":3.107,"atk":1.763},
-  {"hp":2.407,"atk":1.551},
-  {"hp":1.851,"atk":1.361},
-  {"hp":1.727,"atk":1.314},
-  {"hp":1.874,"atk":1.369},
-  {"hp":1.328,"atk":1.153},
-  {"hp":1.048,"atk":1.024},
-  {"hp":0.757,"atk":0.87}
+  {"hp":1.581,"atk":1.257},
+  {"hp":2.162,"atk":1.471},
+  {"hp":3.7,"atk":1.924},
+  {"hp":0.7,"atk":0.836},
+  {"hp":2.811,"atk":1.677},
+  {"hp":2.659,"atk":1.631},
+  {"hp":1.766,"atk":1.329},
+  {"hp":1.505,"atk":1.227},
+  {"hp":1.908,"atk":1.381},
+  {"hp":1.21,"atk":1.1},
+  {"hp":0.991,"atk":0.996},
+  {"hp":0.652,"atk":0.807}
  ]
 }

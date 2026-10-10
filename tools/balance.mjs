@@ -11,9 +11,9 @@
 //       group bonus  = real, from same-type pieces packed next to each other,
 //       aura + cells = HP x1.087 / ATK x1.09 on every unit, ramped in linearly until wave 8
 //                      (early armies have no mage/golem/aura/banner coverage yet),
-//       affinity     = only slime(fire) / goblin(water) / mage(poison) groups, from wave 3 on;
+//       affinity     = only slime(fire) / goblin(water) / mage(poison) groups, from wave 4 on;
 // Early-game cushion (default, disable with --noramp): waves 1-3 aim for 35% / 25% / 15% HP left instead of 10%,
-// and wave 1 is additionally backed off until every bag's bare starting pieces (no purchase) can win it.
+// and wave 1 is additionally backed off until the default bag's bare starting piece (a single slime, no purchase) can win it.
 // The fit target is the mean HP left in won fights, with at least --minwin (default 90%) of seeds winning.
 // The reported margin (+ally HP share left when winning, - enemy HP share left when losing) is continuous across the cliff.
 //   - the bag grows to 30 cells after boss 1 and 36 after boss 2.

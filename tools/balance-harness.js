@@ -2,22 +2,22 @@
 (() => {
   const SHARES={slime:.30,skeleton:.20,goblin:.15,mage:.10,golem:.15,orc:.10},COST={slime:3,skeleton:4,goblin:4,mage:5,golem:6,orc:7},CELLS={slime:1,skeleton:1,goblin:2,mage:3,golem:4,orc:2};
   const earned=r=>r%4===0?12:6+Math.floor((r-1)/4);
-  const budget=w=>{let g=5+10;for(let r=1;r<w;r++){g+=earned(r);if(r%4===0)g+=5;}return g*.88;};
+  const budget=w=>{let g=5+3;for(let r=1;r<w;r++){g+=earned(r);if(r%4===0)g+=5;}return g*.88;};
   const cap=w=>w<=4?25:w<=8?30:36;
   const cellsOf=n=>Object.entries(n).reduce((a,[t,k])=>a+CELLS[t]*k,0);
-  function army(w){const n={slime:2,goblin:1},gold=budget(w),mins={slime:2,goblin:1};let spend=10;
-    for(const t in SHARES){const k=Math.floor(SHARES[t]*(gold-10)/COST[t]);n[t]=(n[t]||0)+k;spend+=k*COST[t];}
+  function army(w){const n={slime:1},gold=budget(w),mins={slime:1};let spend=3;
+    for(const t in SHARES){const k=Math.floor(SHARES[t]*(gold-3)/COST[t]);n[t]=(n[t]||0)+k;spend+=k*COST[t];}
     while(cellsOf(n)>cap(w)){let best=null;for(const t in n)if(n[t]>(mins[t]||0)&&(best===null||n[t]*CELLS[t]>n[best]*CELLS[best]))best=t;if(!best)break;n[best]--;spend-=COST[best];}
     for(const t of ['skeleton','slime'])while(gold-spend>=COST[t]&&cellsOf(n)+CELLS[t]<=cap(w)){n[t]++;spend+=COST[t];}
     return n;}
-  function setup(w){newRun('lord');closeModal();state.pieces=[];state.bench=state.bench.map(()=>null);for(let i=0;i<(w>8?2:w>4?1:0);i++)expand();rebuild();
-    const n=army(w),order=['golem','orc','skeleton','slime','goblin','mage'],aff=w>=3?{slime:'fire',goblin:'water',mage:'poison'}:{};
+  function setup(w){newRun();closeModal();state.pieces=[];state.bench=state.bench.map(()=>null);for(let i=0;i<(w>8?2:w>4?1:0);i++)expand();rebuild();
+    const n=army(w),order=['golem','orc','skeleton','slime','goblin','mage'],aff=w>=4?{slime:'fire',goblin:'water',mage:'poison'}:{};
     for(const t of order)for(let i=0;i<(n[t]||0);i++){const p=piece(t);if(aff[t])p.aff=aff[t];if(!place(p))break;}
     state.wave=w;return n;}
   function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
   // Wave 1 with a bag's own starting pieces and no purchase, real rules, no median patches.
   function startRun(bag,seed,m){const real=Math.random;Math.random=rng(seed*104729);window.__TEST__=true;TUNE[0]={hp:m,atk:Math.sqrt(m)};newRun(bag);closeModal();state.wave=1;battle=buildBattle();mode='battle';battle.intro=null;let t=0;while(!battle.end&&t<61){simulate(.025);t+=.025;}const won=battle.won;Math.random=real;window.__TEST__=false;mode='prepare';battle=null;return won;}
-  window.BAL={army,setup,startRun,rng,startWins(m,seeds){const o={};for(const b of ['lord','alchemist','smith']){let n=0;for(let s=1;s<=seeds;s++)if(startRun(b,s,m))n++;o[b]=n/seeds;}return o;},
+  window.BAL={army,setup,startRun,rng,startWins(m,seeds){const o={};for(const b of [GAME_DATA.run.defaultBag]){let n=0;for(let s=1;s<=seeds;s++)if(startRun(b,s,m))n++;o[b]=n/seeds;}return o;},
     run(w,seed,m){const real=Math.random;Math.random=rng(seed*7919+w);window.__TEST__=true;
       const oP=powerOf,f=Math.min(1,w/8);powerOf=()=>({hp:1+.087*f,atk:1+.09*f,rate:1,tags:[]});
       TUNE[w-1]={hp:m,atk:Math.sqrt(m)};setup(w);battle=buildBattle();mode='battle';battle.intro=null;

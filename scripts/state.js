@@ -11,7 +11,7 @@ const SHAPES=GD.shapes;
 let infoOpen=false;
 const images={};let state,selected=null,mode='prepare',battle=null,speed=1,paused=false,drag=null,toastTimer,modalCallback=null;
 function piece(type,aff='none'){return Rules.newPiece(state,type,aff);}
-function newRun(bagId){if(!BAGS[bagId]){bagSelect();return;}const B=BAGS[bagId];state=Rules.createRun(bagId);selected=state.pieces.find(p=>!D[p.type].material).id;mode='prepare';battle=null;save();render();toast(B.name+' 원정 시작!');}
+function newRun(bagId=GD.run.defaultBag){if(!BAGS[bagId]){bagSelect();return;}const B=BAGS[bagId];state=Rules.createRun(bagId);selected=state.pieces.find(p=>!D[p.type].material).id;mode='prepare';battle=null;save();render();toast(B.name+' 원정 시작!');}
 function save(){try{localStorage.setItem(SAVE,JSON.stringify({...state,board:undefined}));}catch(e){}}
 function restore(){try{const s=Rules.restoreRun(JSON.parse(localStorage.getItem(SAVE)));if(!s)return false;state=s;return true;}catch(e){return false;}}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2400);}

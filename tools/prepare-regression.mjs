@@ -36,7 +36,11 @@ const log=await page.evaluate(([steps,seed])=>{
   const bags=['lord','alchemist','smith'],cov={};
   for(const f of ['applyMutation','applyFusion','offerMutation','offerFusion','claimReward','nextRound','finishBattle','expand','buy','reroll','sell','stow','rotate','unbenchAt','stowTo','togglePin','bossReward']){const orig=window[f];window[f]=function(...a){cov[f]=(cov[f]||0)+1;return orig.apply(this,a);};}
   newRun(bags[seed%3]);settle();snap('newRun');
+  // Reseed the game's Math.random at every step: cosmetic effects (particles, shake) draw from the same stream as the
+  // shop and mutation rolls, and a change in how many particles a fight spawns must not shift later rolls.
+  const mk=n=>{let a=(seed*100003+n*7919)>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};};
   for(let n=0;n<steps;n++){
+    Math.random=mk(n);
     let act;const r=rnd();if(rnd()<.1&&mode==='prepare'&&state.status==='playing')state.gold+=6;
     if(state.status==='reward'){const k=['slimes','gold','expand','cursed'][pick(4)];act='claim:'+k;claimReward(k);if(state.status==='reward'&&!$('overlay').hidden)closeModal();}
     else if(mode==='battle'){act='battle';nextRound();}
@@ -57,7 +61,7 @@ const log=await page.evaluate(([steps,seed])=>{
     else if(r<.87){act='expand';if(rnd()<.2)expand();render();}
     else if(r<.91){const sp=state.pieces.filter(p=>p);if(sp.length){selected=sp[pick(sp.length)].id;}act='select';render();}
     else{act='fight';
-      if(totalCount()>0){startBattle();const forced=rnd()<.6;let t=0;if(forced){battle.time=12;battle.stats.kills=7;battle.won=rnd()<.85;battle.end=true;}else while(!battle.end&&t<61){simulate(.025);t+=.025;}snap('fight:'+(battle.won?'won':'lost')+':'+Math.round(battle.time*10));finishBattle(battle.won);
+      if(totalCount()>0){startBattle();const forced=rnd()<.6;let t=0;if(forced){battle.time=12;battle.stats.kills=7;battle.won=rnd()<.85;battle.end=true;}else while(!battle.end&&t<61){simulate(.025);t+=.025;}snap('fight:'+(battle.won?'won':'lost')+':'+Math.round(battle.time*10));Math.random=mk(n+500000);finishBattle(battle.won);
         if(!$('overlay').hidden){ /* result modal: act on its button like the player */
           const btn=$('modal').querySelector('[data-action]')?.dataset.action;act+=':'+btn;
           closeModal();

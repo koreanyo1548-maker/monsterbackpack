@@ -18,6 +18,7 @@ scripts/
   sprites.js          이미지 경로, 스티커 리그, <img> 헬퍼
   prepare.js          준비 화면(상점, 벤치, 보드, 변이·합성)
   battle.js           가방을 setup 데이터로 만들어 Sim.createBattle에 넘기고 뷰 필드를 붙임, 카메라, 시작/종료, 보상
+  battle-fx.js        스킬·상태이상 연출(부활, 독 폭발, 일제 사격, 방벽, 광란 등, 뷰 전용)
   battle-view.js      canvas 그리기, 스티커 애니메이션, 이펙트(battleView), 프레임 루프
   main.js             입력, 모바일 맞춤, boot, 테스트용 window.MonsterBackpack
   sticker-renderer.js, archer-composer.js, mage-composer.js   스티커 파츠 합성
@@ -33,3 +34,4 @@ tools/                밸런스·회귀 검증과 스티커 빌드 스크립트
 - `node tools/prepare-regression.mjs [--steps 400] [--seed 1] [--root DIR] [--out f.json]` — 실제 UI 함수로 무작위 플레이(구매·이동·변이·합성·판매·전투·보상)를 하며 매 단계 상태를 기록. 준비 화면 규칙을 건드리기 전후 출력을 비교하세요(마지막 `COV` 줄은 호출 횟수라 비교에서 제외).
 - `node tools/rules-node.mjs [--seed 1]` — 브라우저 없이 Node에서 run-rules를 돌려 시드 재현성을 확인
 - `node tools/balance.mjs [--baseline] [--write]` — 웨이브별 `tune`을 맞춤. `--write`는 `data/game-data.json`을 갱신
+- `node tools/attack-timing.mjs` — 리그가 있는 유닛(오크·골렘·고블린·스켈레톤·마법사)의 공격 모션 점검. `data/game-data.json`의 `windup`(선딜, 초)과 공속이 리그 길이에 맞는지, 실제 전투 시뮬에서 모든 타격 전에 선딜 모션이 보이는지 검사(실패 시 종료 코드 1). 유닛의 `atk`/`rate`/`windup`을 바꾼 뒤 실행하세요.

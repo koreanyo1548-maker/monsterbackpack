@@ -10,7 +10,9 @@
 //   hit(target, source, amount, dot)   hp was reduced        shieldAbsorb(target)       a barrier soaked a hit
 //   died(target)                       unit reached 0 hp     revived(target)            hp refilled instead of dying
 //   effect(kind, at)                   'heal' | 'burst' | 'shield' at at.x/at.y
-//   skill(kind, pc)                    'revive' | 'rage' | 'slimeBurst' | 'volley' | 'barrier'; pc is the bag piece or null
+//   skill(kind, pc, unit)              'revive' | 'rage' | 'slimeBurst' | 'volley' | 'barrier'; pc is the bag piece or null,
+//                                      unit is the unit the skill belongs to (where the view draws it)
+//   status(target, kind, source)       a hit applied 'burn' | 'slow' | 'poison' to target
 //   impact(source, target)             a melee/projectile hit landed
 //   attack(unit, target, nx, ny)       a unit started an attack (nx/ny = unit direction to the target)
 //   moved(unit, dt)                    a unit walked this tick  projectile(p) / projectileMoved(p)
@@ -39,7 +41,7 @@ window.createBattleSim = function createBattleSim(data) {
 
   function unit(type, team, x, y, opts = {}) {
     const d = unitDefs[type] || {hp: type === 'orc' ? 155 : 64, atk: type === 'orc' ? 15 : 7, rate: type === 'orc' ? .55 : .8, range: 22, speed: type === 'orc' ? 25 : 33};
-    const u = {id: unitId++, type, team, x, y, hp: d.hp, maxHp: d.hp, atk: d.atk, rate: d.rate, range: d.range, speed: d.speed, aff: 'none', cd: rand() * .6, flash: 0, swing: 0, dir: team === 0 ? 1 : -1, burn: 0, burnDps: 0, poison: 0, poisonDps: 0, stacks: 0, slow: 0, healClock: 0, moving: false, deadFor: 0, boss: false, ...opts};
+    const u = {id: unitId++, type, team, x, y, hp: d.hp, maxHp: d.hp, atk: d.atk, rate: d.rate, range: d.range, speed: d.speed, aff: 'none', cd: rand() * .6, flash: 0, swing: 0, dir: team === 0 ? 1 : -1, burn: 0, burnDps: 0, poison: 0, poisonDps: 0, stacks: 0, slow: 0, healClock: 0, moving: false, deadFor: 0, boss: false, windup: d.windup || 0, recovery: d.recovery || 0, ...opts};
     u.maxHp = u.hp;
     return u;
   }
@@ -59,16 +61,22 @@ window.createBattleSim = function createBattleSim(data) {
   // Melee reach is body-to-body: units stop when their bodies touch instead of stacking inside each other.
   const reachOf = (u, v) => isMelee(u) ? rad(u) + rad(v) + (u.range - 22) * .5 + 3 : u.range;
 
+  // Units with a rigged attack animation need their wind-up and follow-through to play at 1x. `windup` and `recovery`
+  // (seconds, from the data) are the rig's natural lengths; both shrink together only when a faster attack rate
+  // (buffs) leaves the cycle too short to hold them.
+  const fitOf = u => u.windup > 0 ? Math.min(1, 1 / u.rate / (u.windup + (u.recovery || 0))) : 1;
+  const windupOf = u => u.windup > 0 ? u.windup * fitOf(u) : 0;
+  const recoveryOf = u => (u.recovery || 0) * fitOf(u);
   const pstat = (b, pid) => b.stats.by[pid] ??= {dmg: 0, kills: 0, skills: 0};
 
-  function chain(b, pc, kind, ids = []) {
+  function chain(b, pc, kind, ids = [], at = null) {
     pstat(b, pc.pid).skills++;
     pc.pulse = b.time;
     for (const id of ids) {
       const o = b.pieceList.find(x => x.pid === id);
       if (o) o.pulse = b.time;
     }
-    on(b).skill?.(kind, pc);
+    on(b).skill?.(kind, pc, at);
   }
 
   function hit(b, target, amount, source, dot = false) {
@@ -94,8 +102,8 @@ window.createBattleSim = function createBattleSim(data) {
       target.hp = target.maxHp * rv;
       on(b).revived?.(target);
       const rp = target.pid && b.pieceList.find(x => x.pid === target.pid);
-      if (rp) chain(b, rp, 'revive');
-      else on(b).skill?.('revive', null);
+      if (rp) chain(b, rp, 'revive', [], target);
+      else on(b).skill?.('revive', null, target);
       return;
     }
     target.hp = 0;
@@ -117,13 +125,18 @@ window.createBattleSim = function createBattleSim(data) {
       target.burn = 3;
       target.burnDps = Math.max(target.burnDps, source.atk * .2);
       target.dotSource = source;
+      on(b).status?.(target, 'burn', source);
     }
-    if (['water', 'steam', 'spring'].includes(a)) target.slow = 2;
+    if (['water', 'steam', 'spring'].includes(a)) {
+      target.slow = 2;
+      on(b).status?.(target, 'slow', source);
+    }
     if (['poison', 'plague', 'blast'].includes(a)) {
       target.poison = 4;
       target.stacks = Math.min(3, target.stacks + 1);
       target.poisonDps = Math.max(target.poisonDps, source.atk * .1);
       target.dotSource = source;
+      on(b).status?.(target, 'poison', source);
     }
     on(b).impact?.(source, target);
     if (source.type === 'mage' || source.type === 'orc' || source.boss)
@@ -179,7 +192,7 @@ window.createBattleSim = function createBattleSim(data) {
       on(b).effect?.('burst', dead);
       if (n && pc && b.time - (pc.lastBurst || -9) > .8) {
         pc.lastBurst = b.time;
-        chain(b, pc, 'slimeBurst');
+        chain(b, pc, 'slimeBurst', [], dead);
       }
     }
     for (const g of b.pieceList) {
@@ -190,7 +203,7 @@ window.createBattleSim = function createBattleSim(data) {
       if (!foes.length) continue;
       g.icd = 3;
       for (const t of foes) launchProjectile(b, gob, t, 'arrow', 1.2);
-      chain(b, g, 'volley', [dead.pid]);
+      chain(b, g, 'volley', [dead.pid], gob);
     }
   }
 
@@ -198,7 +211,8 @@ window.createBattleSim = function createBattleSim(data) {
   function skillTick(b, dt) {
     for (const pc of b.pieceList) {
       if (pc.icd > 0) pc.icd = Math.max(0, pc.icd - dt);
-      if (pc.type !== 'mage' || !b.units.some(u => u.pid === pc.pid && u.hp > 0)) continue;
+      const caster = pc.type === 'mage' ? b.units.find(u => u.pid === pc.pid && u.hp > 0) : null;
+      if (!caster) continue;
       pc.skillCd -= dt;
       if (pc.skillCd > 0) continue;
       pc.skillCd = 8;
@@ -211,7 +225,7 @@ window.createBattleSim = function createBattleSim(data) {
           on(b).effect?.('shield', u);
           n++;
         }
-      if (n) chain(b, pc, 'barrier', [...ids]);
+      if (n) chain(b, pc, 'barrier', [...ids], caster);
     }
   }
 
@@ -222,9 +236,11 @@ window.createBattleSim = function createBattleSim(data) {
   const formation = n => { const t = Math.max(0, Math.min(1, (n - 6) / 40)); return {sx: 42 + 22 * t, gap: 40 + 32 * t}; };
   const neighbors = (i, c, n) => [i % c > 0 ? i - 1 : -1, i % c < c - 1 ? i + 1 : -1, i - c, i + c].filter(j => j >= 0 && j < n);
 
+  const enemyCount = w => scaling.enemyBaseCount + Math.floor(w * scaling.enemyCountPerWave);
+
   // Enemy list for a wave: counts follow the weights in data.encounters, rounded by largest remainder.
   function encounter(w) {
-    const wts = data.encounters[w - 1], en = scaling.enemyBaseCount + Math.floor(w * scaling.enemyCountPerWave);
+    const wts = data.encounters[w - 1], en = enemyCount(w);
     const keys = Object.keys(wts), sum = keys.reduce((a, k) => a + wts[k], 0);
     const list = keys.map(k => ({type: k, count: Math.floor(wts[k] / sum * en), rem: (wts[k] / sum * en) % 1}));
     let left = en - list.reduce((a, o) => a + o.count, 0);
@@ -256,7 +272,7 @@ window.createBattleSim = function createBattleSim(data) {
       }
     }
 
-    const boss = wave % 4 === 0, scale = eHp(wave), en = scaling.enemyBaseCount + Math.floor(wave * scaling.enemyCountPerWave);
+    const boss = wave % 4 === 0, scale = eHp(wave), en = enemyCount(wave);
     const ecols = Math.min(7, Math.max(3, Math.ceil(Math.sqrt(en * 1.6)))), efront = mid - gap, esy = Math.min(sy, 32), enemies = [];
     const order = encounter(wave).list.flatMap(o => Array(o.count).fill(o.type)).sort((a, b) => (ENEMY[a].range > 60) - (ENEMY[b].range > 60));
     for (let i = 0; i < en; i++) {
@@ -305,7 +321,7 @@ window.createBattleSim = function createBattleSim(data) {
         u.raged = true;
         u.atk *= 1.5;
         L.effect?.('burst', u);
-        L.skill?.('rage', null);
+        L.skill?.('rage', null, u);
       }
       if (u.shield > 0) {
         u.shieldT -= dt;
@@ -325,13 +341,18 @@ window.createBattleSim = function createBattleSim(data) {
       const dist = Math.hypot(nearest.x - u.x, nearest.y - u.y) || .01, reach = reachOf(u, nearest);
       const dx = nearest.x - u.x, dy = nearest.y - u.y;
       u.dir = dx >= 0 ? 1 : -1;
-      if (dist > reach) {
-        const stride = Math.min(dist - reach, u.speed * dt);
+      // A unit that has arrived stands still: float noise (dist a hair above reach) must not count as walking,
+      // otherwise it never shows its wind-up pose.
+      const stride = Math.min(dist - reach, u.speed * dt);
+      if (stride > 1e-6) {
         u.x += dx / dist * stride;
         u.y += dy / dist * stride;
         u.moving = true;
         L.moved?.(u, dt);
       }
+      // While walking the cooldown never drops below the wind-up, so arriving starts a full, visible wind-up
+      // instead of an instant, animation-less hit.
+      if (u.moving && u.windup > 0) u.cd = Math.max(u.cd, windupOf(u));
       u.cd -= dt * (u.slow > 0 ? .75 : 1);
       if (dist <= reach + 4 && u.cd <= 0) {
         u.cd = 1 / u.rate;
@@ -377,5 +398,5 @@ window.createBattleSim = function createBattleSim(data) {
     }
   }
 
-  return {W, H, seed, unit, createBattle, step, encounter, eHp, eAtk, groupBonus, elemMult, isMelee, reachOf, bodySize};
+  return {W, H, seed, unit, createBattle, step, encounter, eHp, eAtk, groupBonus, elemMult, isMelee, reachOf, bodySize, windupOf, recoveryOf};
 };
