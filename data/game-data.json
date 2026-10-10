@@ -40,14 +40,24 @@
  },
  "bagKinds": {"banner":{"g":"⚑","name":"군기 칸","desc":"올라간 몬스터 공격력 +15%"},"shield":{"g":"⛨","name":"방패 칸","desc":"올라간 몬스터 체력 +20%"},"still":{"g":"⚗","name":"증류 칸","desc":"올라간 무리의 복합 변이 성공률 +25%"}},
  "bags": {
+  "basic": {
+   "name": "기본 가방",
+   "desc": "5×5 정사각형 · 특수 칸 없음 · 처음 시작하는 가방",
+   "open": [".....#",".....#",".....#",".....#",".....#","######"],
+   "kinds": ["......","......","......","......","......","......"],
+   "steps": [[[0,5],[1,5],[2,5],[3,5],[4,5]],[[5,0],[5,1],[5,2],[5,3],[5,4],[5,5]]],
+   "start": [["slime",2,2]],
+   "shop": ["slime","skeleton","goblin"],
+   "bench": ["any","any","any"]
+  },
   "lord": {
    "name": "군주의 주머니",
    "desc": "5×5 정사각형 · 중앙 군기 칸 · 슬라임 군단",
    "open": [".....#",".....#",".....#",".....#",".....#","######"],
    "kinds": ["......","......","..bb..","..bb..","......","......"],
    "steps": [[[0,5],[1,5],[2,5],[3,5],[4,5]],[[5,0],[5,1],[5,2],[5,3],[5,4],[5,5]]],
-   "start": [["slime",2,2]],
-   "shop": ["slime","skeleton","goblin"],
+   "start": [["slime",0,2],["slime",1,2],["goblin",2,3]],
+   "shop": ["slime","fire","golem"],
    "bench": ["any","any","any"]
   },
   "alchemist": {
@@ -102,7 +112,7 @@
  "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":2,"enemyCountPerWave":1,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
  "run": {
   "startGold": 5,
-  "defaultBag": "lord",
+  "defaultBag": "basic",
   "finalWave": 12,
   "bossEvery": 4,
   "rerollBase": 2,
@@ -118,7 +128,7 @@
  },
  "field": {"width":440,"height":540},
  "tune": [
-  {"hp":1.581,"atk":1.257},
+  {"hp":1.4,"atk":1.183},
   {"hp":2.162,"atk":1.471},
   {"hp":3.7,"atk":1.924},
   {"hp":0.7,"atk":0.836},

@@ -1,6 +1,5 @@
 // Prepare screen: shop, bench, board rendering, drag/select, mutation and fusion.
 'use strict';
-function bagSelect(){const mini=B=>`<span class="mini">${B.open0.map((o,i)=>`<i class="${o?'o':''} ${B.kinds[i]?'k-'+B.kinds[i]:''}"></i>`).join('')}</span>`;modal(`<h2>가방을 고르세요</h2><p class="small">가방 모양과 특수 칸이 이번 원정의 전략을 정합니다.</p>${Object.entries(BAGS).map(([id,B])=>`<button class="reward" data-bag="${id}">${mini(B)}<span><b>${B.name}</b><small>${B.desc}</small><small>시작: ${B.start.map(a=>D[a[0]].name).join(' · ')}</small></span></button>`).join('')}`);}
 function infoCompact(i=selectedIndex(),preview=null){const bp=i<0?state.bench.find(q=>q&&q.id===selected):null,p=state.board[i]||bp;
  const wrap=(ic,h,chips,line)=>`<div class="ci"><div class="ico">${ic}</div><div class="it"><div class="hd"><h3>${h}</h3><div class="chips">${chips}</div></div><div class="rows"><div class="rw dim">${line}</div></div></div><span class="exp">⌄</span></div>`;
  if(!p)return wrap(pic({type:'slime'}),'작은 가방, 커다란 군단',`<span>총 ${totalCount()}마리</span>`,'피스를 눌러 선택하세요 · 끌어서 옮깁니다');
