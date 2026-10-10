@@ -236,9 +236,11 @@ window.createBattleSim = function createBattleSim(data) {
   const formation = n => { const t = Math.max(0, Math.min(1, (n - 6) / 40)); return {sx: 42 + 22 * t, gap: 40 + 32 * t}; };
   const neighbors = (i, c, n) => [i % c > 0 ? i - 1 : -1, i % c < c - 1 ? i + 1 : -1, i - c, i + c].filter(j => j >= 0 && j < n);
 
+  const enemyCount = w => scaling.enemyBaseCount + Math.floor(w * scaling.enemyCountPerWave);
+
   // Enemy list for a wave: counts follow the weights in data.encounters, rounded by largest remainder.
   function encounter(w) {
-    const wts = data.encounters[w - 1], en = scaling.enemyBaseCount + Math.floor(w * scaling.enemyCountPerWave);
+    const wts = data.encounters[w - 1], en = enemyCount(w);
     const keys = Object.keys(wts), sum = keys.reduce((a, k) => a + wts[k], 0);
     const list = keys.map(k => ({type: k, count: Math.floor(wts[k] / sum * en), rem: (wts[k] / sum * en) % 1}));
     let left = en - list.reduce((a, o) => a + o.count, 0);
@@ -270,7 +272,7 @@ window.createBattleSim = function createBattleSim(data) {
       }
     }
 
-    const boss = wave % 4 === 0, scale = eHp(wave), en = scaling.enemyBaseCount + Math.floor(wave * scaling.enemyCountPerWave);
+    const boss = wave % 4 === 0, scale = eHp(wave), en = enemyCount(wave);
     const ecols = Math.min(7, Math.max(3, Math.ceil(Math.sqrt(en * 1.6)))), efront = mid - gap, esy = Math.min(sy, 32), enemies = [];
     const order = encounter(wave).list.flatMap(o => Array(o.count).fill(o.type)).sort((a, b) => (ENEMY[a].range > 60) - (ENEMY[b].range > 60));
     for (let i = 0; i < en; i++) {

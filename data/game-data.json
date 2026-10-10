@@ -46,8 +46,8 @@
    "open": [".....#",".....#",".....#",".....#",".....#","######"],
    "kinds": ["......","......","..bb..","..bb..","......","......"],
    "steps": [[[0,5],[1,5],[2,5],[3,5],[4,5]],[[5,0],[5,1],[5,2],[5,3],[5,4],[5,5]]],
-   "start": [["slime",0,2],["slime",1,2],["goblin",2,3]],
-   "shop": ["slime","fire","golem"],
+   "start": [["slime",2,2]],
+   "shop": ["slime","skeleton","goblin"],
    "bench": ["any","any","any"]
   },
   "alchemist": {
@@ -83,7 +83,7 @@
  "encounters": [
   {"skeleton":1},
   {"skeleton":7,"slime":3},
-  {"skeleton":55,"slime":25,"orc":20},
+  {"skeleton":55,"slime":25,"goblin":20},
   {"skeleton":50,"goblin":25,"slime":25},
   {"slime":25,"goblin":25,"orc":25,"skeleton":25},
   {"skeleton":35,"orc":25,"mage":20,"goblin":20},
@@ -99,9 +99,10 @@
   "8": {"type":"skeleton","name":"해골왕","trait":"revive","desc":"쓰러져도 한 번 부활(체력 40%)"},
   "12": {"type":"golem","name":"거신 골렘","trait":"armor","desc":"받는 피해 25% 감소"}
  },
- "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":5,"enemyCountPerWave":0.9,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
+ "scaling": {"enemyHpGrowth":1.115,"enemyAtkGrowth":1.07,"enemyBaseCount":2,"enemyCountPerWave":1,"boss":{"hp":550,"atk":26,"atkGrowth":1.05,"rate":0.5,"range":34,"speed":21}},
  "run": {
   "startGold": 5,
+  "defaultBag": "lord",
   "finalWave": 12,
   "bossEvery": 4,
   "rerollBase": 2,
@@ -117,17 +118,17 @@
  },
  "field": {"width":440,"height":540},
  "tune": [
-  {"hp":2.264,"atk":1.505},
-  {"hp":2.608,"atk":1.615},
-  {"hp":2.674,"atk":1.635},
-  {"hp":1.312,"atk":1.145},
-  {"hp":2.992,"atk":1.73},
-  {"hp":2.196,"atk":1.482},
-  {"hp":1.751,"atk":1.323},
-  {"hp":1.643,"atk":1.282},
-  {"hp":1.602,"atk":1.266},
-  {"hp":1.129,"atk":1.063},
-  {"hp":0.925,"atk":0.962},
-  {"hp":0.694,"atk":0.833}
+  {"hp":1.581,"atk":1.257},
+  {"hp":2.162,"atk":1.471},
+  {"hp":3.7,"atk":1.924},
+  {"hp":0.7,"atk":0.836},
+  {"hp":2.811,"atk":1.677},
+  {"hp":2.659,"atk":1.631},
+  {"hp":1.766,"atk":1.329},
+  {"hp":1.505,"atk":1.227},
+  {"hp":1.908,"atk":1.381},
+  {"hp":1.21,"atk":1.1},
+  {"hp":0.991,"atk":0.996},
+  {"hp":0.652,"atk":0.807}
  ]
 }
